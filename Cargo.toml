@@ -2,6 +2,7 @@
 name = "cronos"
 version = "0.1.0"
 edition = "2021"
+description = "Dlist's premium search system built for performance and quality."
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -10,11 +11,11 @@ edition = "2021"
 tantivy = "0.17"
 rayon = "1"
 
-# Database driver
-scylla = "0.4.4"
-
-# Internal communications between async <-> sync APIs
-flume = "0.10.12"
+anyhow = "1.0.56"  # Error Handling
+scylla = "0.4.4"  # Database driver
+flume = "0.10.12"  # Internal communications between async <-> sync APIs
+governor = "0.4.2"  # Ratelimiter
+once_cell = "1.10.0"  # Lazy globals
 
 # Logging
 tracing = "0.1.33"
@@ -24,5 +25,6 @@ tracing-subscriber = "0.3.11"
 # Global Deps
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
+poem = { version = "1.3.22", features = ["anyhow"] }
 poem-openapi = { version = "1.3.22", features = ["redoc", "uuid"] }
-
+clap = { version = "3", features = ["derive", "env"] }
