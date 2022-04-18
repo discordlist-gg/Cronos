@@ -1,0 +1,1 @@
+& docker run --rm --memory="4g" --memory-reservation="2g" --memory-swap="6g" --cpus="4.0" --name scylla -p "9042:9042" -p "7000-7001:7000-7001" -d scylladb/scylla --developer-mode=1
