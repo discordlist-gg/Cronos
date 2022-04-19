@@ -49,6 +49,9 @@ pub struct Config {
     #[clap(long, env, default_value = "127.0.0.1:9042")]
     /// A list of known cluster nodes seperated by a `;`.
     cluster_nodes: String,
+
+    #[clap(long)]
+    init_tables: bool,
 }
 
 #[tokio::main]
@@ -62,6 +65,15 @@ async fn main() -> Result<()> {
         );
     }
     tracing_subscriber::fmt::init();
+
+    {
+        let nodes = args
+            .cluster_nodes
+            .split(";")
+            .collect::<Vec<&str>>();
+
+        models::connection::connect(&nodes, args.init_tables).await?;
+    }
 
     let api_service = OpenApiService::new(
         (routes::bots::BotApi, routes::packs::PackApi),
