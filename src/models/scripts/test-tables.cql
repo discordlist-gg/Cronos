@@ -16,7 +16,6 @@ CREATE TABLE IF NOT EXISTS bots (
     features bigint,
     permissions bigint,
     tags set<text>,
-    packs set<bigint>,
     created_on timestamp,
     is_hidden boolean,
     is_forced_into_hiding boolean,
