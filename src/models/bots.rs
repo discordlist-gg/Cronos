@@ -1,7 +1,7 @@
 use poem_openapi::Object;
 use backend_common::FieldNamesAsArray;
 use backend_common::tags::BotTags;
-use backend_common::types::{DiscordUrl, JsSafeBigInt, JsSafeInt, Set, Timestamp};
+use backend_common::types::{JsSafeBigInt, JsSafeInt, Set, Timestamp};
 
 #[derive(Object, FieldNamesAsArray)]
 #[oai(rename_all = "camelCase")]
@@ -23,26 +23,6 @@ pub struct Bot {
 
     /// Is the bot able to be put in a pack?
     pub is_packable: bool,
-
-    /// The custom invite URL.
-    ///
-    /// If set this will be used over the auto-generated invite URL.
-    pub custom_url: Option<DiscordUrl>,
-
-    /// The bot's website.
-    pub website_url: Option<DiscordUrl>,
-
-    /// The bot's code repository.
-    pub repo_url: Option<DiscordUrl>,
-
-    /// The bot's twitter.
-    pub twitter_url: Option<DiscordUrl>,
-
-    /// The bot's instagram.
-    pub instagram_url: Option<DiscordUrl>,
-
-    /// The bot's support server.
-    pub support_server_url: Option<DiscordUrl>,
 
     /// The bot's custom slug which can be used to access the bot.
     pub slug: Option<String>,
