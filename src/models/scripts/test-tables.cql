@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS bots (
     flags bigint,
     features bigint,
     permissions bigint,
-    tags set<text>,
+    tags varint,
     created_on timestamp,
     is_hidden boolean,
     is_forced_into_hiding boolean,

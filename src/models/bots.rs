@@ -39,7 +39,7 @@ pub struct Bot {
     pub permissions: JsSafeBigInt,
 
     /// The bot's associated tags.
-    pub tags: Set<BotTags>,
+    pub tags: BotTags,
 
     /// The timestamp that the bot was first created on.
     pub created_on: Timestamp,
