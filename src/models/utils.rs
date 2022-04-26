@@ -1,8 +1,8 @@
 use std::collections::HashMap;
+
 use futures::StreamExt;
 use scylla::frame::value::Counter;
 use scylla::transport::iterator::RowIterator;
-
 
 #[macro_export]
 macro_rules! derive_fetch_by_id {
@@ -10,6 +10,7 @@ macro_rules! derive_fetch_by_id {
         impl $slf {
             pub async fn fetch(id: i64) -> anyhow::Result<Option<$slf>> {
                 use scylla::IntoTypedRows;
+
                 use super::connection::session;
 
                 let qry = format!(
@@ -31,7 +32,6 @@ macro_rules! derive_fetch_by_id {
         }
     };
 }
-
 
 #[derive(Debug, Default, Copy, Clone)]
 pub struct VoteStats {
@@ -58,12 +58,12 @@ impl VoteStats {
     }
 }
 
-
 pub async fn process_rows(iter: RowIterator) -> HashMap<i64, VoteStats> {
     let mut iter = iter.into_typed::<(i64, Counter, Counter)>();
 
     let mut processed_changes = HashMap::new();
-    while let Some(Ok((id, Counter(votes), Counter(all_time_votes)))) = iter.next().await {
+    while let Some(Ok((id, Counter(votes), Counter(all_time_votes)))) = iter.next().await
+    {
         processed_changes.insert(id, VoteStats::new(votes, all_time_votes));
     }
 

@@ -1,6 +1,6 @@
 pub mod bots;
-pub mod packs;
 pub mod connection;
+pub mod packs;
 mod utils;
 
 pub use utils::VoteStats;

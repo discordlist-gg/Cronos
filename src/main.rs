@@ -67,10 +67,7 @@ async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
     {
-        let nodes = args
-            .cluster_nodes
-            .split(";")
-            .collect::<Vec<&str>>();
+        let nodes = args.cluster_nodes.split(";").collect::<Vec<&str>>();
 
         models::connection::connect(&nodes, args.init_tables).await?;
     }
