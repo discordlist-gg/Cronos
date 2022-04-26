@@ -322,9 +322,11 @@ name = "cronos"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "arc-swap",
  "backend-common",
  "clap",
  "flume",
+ "futures",
  "governor",
  "once_cell",
  "poem",

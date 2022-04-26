@@ -19,6 +19,12 @@ CREATE TABLE IF NOT EXISTS bots (
     brief_description text,
     PRIMARY KEY ( id )
 );
+CREATE TABLE IF NOT EXISTS bot_votes (
+    id bigint,
+    votes counter,
+    all_time_votes counter,
+    PRIMARY KEY ( id )
+);
 CREATE TABLE IF NOT EXISTS packs (
     id bigint,
     name text,
@@ -30,6 +36,12 @@ CREATE TABLE IF NOT EXISTS packs (
     is_forced_into_hiding boolean,
     owner_id bigint,
     co_owner_ids set<bigint>,
+    PRIMARY KEY ( id )
+);
+CREATE TABLE IF NOT EXISTS pack_votes (
+    id bigint,
+    votes counter,
+    all_time_votes counter,
     PRIMARY KEY ( id )
 );
 

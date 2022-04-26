@@ -1,9 +1,26 @@
+use std::collections::HashMap;
+use std::sync::Arc;
+
+use anyhow::Result;
+use arc_swap::ArcSwap;
 use poem_openapi::Object;
+use scylla::FromRow;
 use backend_common::FieldNamesAsArray;
 use backend_common::tags::BotTags;
 use backend_common::types::{JsSafeBigInt, JsSafeInt, Set, Timestamp};
+use once_cell::sync::Lazy;
 
-#[derive(Object, FieldNamesAsArray)]
+use crate::derive_fetch_by_id;
+use crate::models::connection::session;
+use crate::models::utils::{process_rows, VoteStats};
+
+#[derive(
+    Object,
+    FromRow,
+    FieldNamesAsArray,
+    Debug,
+    Clone,
+)]
 #[oai(rename_all = "camelCase")]
 pub struct Bot {
     /// The snowflake ID of the bot.
@@ -61,4 +78,27 @@ pub struct Bot {
 
     /// The short description of the bot.
     pub brief_description: String,
+}
+derive_fetch_by_id!(Bot, table = "bots");
+
+
+static VOTE_INFO: Lazy<ArcSwap<HashMap<i64, VoteStats>>> = Lazy::new(|| ArcSwap::from_pointee(HashMap::new()));
+
+#[inline]
+pub fn vote_stats(id: i64) -> VoteStats {
+    VOTE_INFO
+        .load()
+        .get(&id)
+        .copied()
+        .unwrap_or_default()
+}
+
+pub async fn refresh_latest_votes() -> Result<()> {
+    let iter = session()
+        .query_iter("SELECT id, votes, all_time_votes FROM bot_votes;", &[])
+        .await?;
+
+    VOTE_INFO.store(Arc::new(process_rows(iter).await));
+
+    Ok(())
 }
