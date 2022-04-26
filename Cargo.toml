@@ -16,6 +16,8 @@ scylla = "0.4.4"  # Database driver
 flume = "0.10.12"  # Internal communications between async <-> sync APIs
 governor = "0.4.2"  # Ratelimiter
 once_cell = "1.10.0"  # Lazy globals
+futures = "0.3.21"
+arc-swap = "1.5.0"
 
 # Logging
 tracing = "0.1.33"
@@ -28,3 +30,4 @@ tokio = { version = "1", features = ["full"] }
 poem = { version = "1.3.22", features = ["anyhow"] }
 poem-openapi = { version = "1.3.22", features = ["redoc", "uuid"] }
 clap = { version = "3", features = ["derive", "env"] }
+backend-common = { git = "https://github.com/discordlist-gg/backend-common.git" }
