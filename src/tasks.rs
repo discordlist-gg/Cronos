@@ -1,4 +1,5 @@
 use std::time::Duration;
+
 use tokio::time::interval;
 
 pub fn start_vote_update_tasks() {

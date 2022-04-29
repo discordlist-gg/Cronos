@@ -1,10 +1,5 @@
 use deunicode::deunicode_char;
-use tantivy::tokenizer::{
-    SimpleTokenizer,
-    Token,
-    TokenStream,
-    Tokenizer,
-};
+use tantivy::tokenizer::{SimpleTokenizer, Token, TokenStream, Tokenizer};
 
 #[derive(Clone)]
 pub struct SimpleUnicodeTokenizer {
@@ -13,17 +8,13 @@ pub struct SimpleUnicodeTokenizer {
 
 impl Default for SimpleUnicodeTokenizer {
     fn default() -> Self {
-        Self {
-            limit: usize::MAX,
-        }
+        Self { limit: usize::MAX }
     }
 }
 
 impl SimpleUnicodeTokenizer {
     pub fn with_limit(num_words: usize) -> Self {
-        Self {
-            limit: num_words,
-        }
+        Self { limit: num_words }
     }
 
     pub fn token_stream(&self, text: &str) -> SimpleTokenStream {
@@ -50,7 +41,7 @@ pub fn produce_tokens(text: &str, num_tokens: usize) -> Vec<Token> {
     let mut tokens = vec![];
     while let Some(token) = stream.next() {
         if tokens.len() >= num_tokens {
-            break
+            break;
         }
 
         tokens.push(token.clone());
@@ -63,8 +54,6 @@ pub struct SimpleTokenStream {
     tokens: Vec<Token>,
     pointer: usize,
 }
-
-
 
 impl SimpleTokenStream {
     pub fn reset(&mut self) {

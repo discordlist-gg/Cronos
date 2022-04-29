@@ -1,10 +1,11 @@
 use std::cmp::Reverse;
+
 use poem_openapi::Enum;
 use tantivy::collector::TopDocs;
-use tantivy::schema::Field;
-use tantivy::{DocAddress, DocId, Score, Searcher, SegmentReader};
 use tantivy::fastfield::FastFieldReader;
 use tantivy::query::Query;
+use tantivy::schema::Field;
+use tantivy::{DocAddress, DocId, Score, Searcher, SegmentReader};
 
 pub mod bots;
 pub mod packs;
@@ -24,7 +25,6 @@ impl Default for Order {
     }
 }
 
-
 pub(crate) fn execute_search<T>(
     searcher: &Searcher,
     query: Box<dyn Query>,
@@ -35,11 +35,15 @@ pub(crate) fn execute_search<T>(
     order: Order,
 ) -> anyhow::Result<()>
 where
-    T: PartialOrd + Clone + Send + Sync + 'static
+    T: PartialOrd + Clone + Send + Sync + 'static,
 {
     match order {
-        Order::Desc => collector_for_id_desc(searcher, query, results, field, collector, cb),
-        Order::Asc => collector_for_id_asc(searcher, query, results, field, collector, cb),
+        Order::Desc => {
+            collector_for_id_desc(searcher, query, results, field, collector, cb)
+        },
+        Order::Asc => {
+            collector_for_id_asc(searcher, query, results, field, collector, cb)
+        },
     }
 }
 
@@ -49,16 +53,13 @@ pub(crate) fn collector_for_id_desc<T>(
     results: &mut Vec<DocAddress>,
     field: Field,
     collector: TopDocs,
-    cb: fn(i64) -> T
+    cb: fn(i64) -> T,
 ) -> anyhow::Result<()>
 where
-    T: PartialOrd + Clone + Send + Sync + 'static
+    T: PartialOrd + Clone + Send + Sync + 'static,
 {
     let collector = collector.tweak_score(move |segment_reader: &SegmentReader| {
-        let reader = segment_reader
-            .fast_fields()
-            .i64(field)
-            .unwrap();
+        let reader = segment_reader.fast_fields().i64(field).unwrap();
 
         // We can now define our actual scoring function
         move |doc: DocId, original_score: Score| {
@@ -68,13 +69,11 @@ where
         }
     });
 
-
     let docs = searcher.search(&query, &collector)?;
     results.extend(docs.into_iter().map(|v| v.1));
 
     Ok(())
 }
-
 
 pub(crate) fn collector_for_id_asc<T>(
     searcher: &Searcher,
@@ -82,16 +81,13 @@ pub(crate) fn collector_for_id_asc<T>(
     results: &mut Vec<DocAddress>,
     field: Field,
     collector: TopDocs,
-    cb: fn(i64) -> T
+    cb: fn(i64) -> T,
 ) -> anyhow::Result<()>
 where
-    T: PartialOrd + Clone + Send + Sync + 'static
+    T: PartialOrd + Clone + Send + Sync + 'static,
 {
     let collector = collector.tweak_score(move |segment_reader: &SegmentReader| {
-        let reader = segment_reader
-            .fast_fields()
-            .i64(field)
-            .unwrap();
+        let reader = segment_reader.fast_fields().i64(field).unwrap();
 
         // We can now define our actual scoring function
         move |doc: DocId, original_score: Score| {
@@ -100,7 +96,6 @@ where
             (Reverse(cb(entity_id)), original_score)
         }
     });
-
 
     let docs = searcher.search(&query, &collector)?;
     results.extend(docs.into_iter().map(|v| v.1));

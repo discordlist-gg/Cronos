@@ -24,8 +24,12 @@ pub fn parse_query(query: &str, fields: &[Field]) -> Vec<Box<dyn Query>> {
     stages
 }
 
-
-fn build_fuzzy_stage(dist: u8, length_cut_off: usize, fields: &[Field], token_stream: &mut SimpleTokenStream) -> Option<Box<dyn Query>> {
+fn build_fuzzy_stage(
+    dist: u8,
+    length_cut_off: usize,
+    fields: &[Field],
+    token_stream: &mut SimpleTokenStream,
+) -> Option<Box<dyn Query>> {
     let mut stage = {
         let mut inner = vec![];
         for _ in 0..fields.len() {
@@ -44,14 +48,14 @@ fn build_fuzzy_stage(dist: u8, length_cut_off: usize, fields: &[Field], token_st
             let term = Term::from_field_text(field, token.text.as_str());
             stage[i].push((
                 Occur::Should,
-                Box::new(FuzzyTermQuery::new_prefix(term, dist, true)) as Box<dyn Query>
+                Box::new(FuzzyTermQuery::new_prefix(term, dist, true)) as Box<dyn Query>,
             ));
         }
     }
     token_stream.reset();
 
     if stage[0].is_empty() {
-        return None
+        return None;
     }
 
     let mut boost_factor = 1.0;

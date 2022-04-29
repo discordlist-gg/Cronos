@@ -1,18 +1,17 @@
 use std::ops::Deref;
 use std::sync::Arc;
 
-use poem_openapi::Enum;
 use anyhow::Result;
-use tantivy::{DocAddress, IndexReader, Searcher};
+use poem_openapi::Enum;
 use tantivy::collector::TopDocs;
 use tantivy::query::Query;
 use tantivy::schema::Field;
+use tantivy::{DocAddress, IndexReader, Searcher};
 use tokio::sync::{oneshot, Semaphore};
 
-use crate::search::FromTantivyDoc;
-use crate::search::readers::Order;
 use crate::models::bots;
-
+use crate::search::readers::Order;
+use crate::search::FromTantivyDoc;
 
 #[derive(Enum, Debug, Copy, Clone)]
 pub enum BotsSortBy {
@@ -82,7 +81,7 @@ impl InnerReader {
         order: Order,
     ) -> Result<Vec<T>>
     where
-        T: FromTantivyDoc + Sync + Send + 'static
+        T: FromTantivyDoc + Sync + Send + 'static,
     {
         let _permit = self.concurrency_limiter.acquire().await?;
         let (waker, rx) = oneshot::channel();
@@ -111,7 +110,6 @@ impl InnerReader {
     }
 }
 
-
 fn execute_search<T: FromTantivyDoc>(
     id_field: Field,
     search_fields: &[Field],
@@ -137,13 +135,11 @@ fn execute_search<T: FromTantivyDoc>(
         )?;
 
         if result_addresses.len() == (limit + offset) {
-            break
+            break;
         }
     }
 
-    let docs = result_addresses
-        .into_iter()
-        .skip(offset);
+    let docs = result_addresses.into_iter().skip(offset);
 
     let schema = searcher.schema();
     let mut loaded = vec![];
@@ -172,19 +168,43 @@ fn search_docs(
             results.extend(docs.into_iter().map(|v| v.1));
             Ok(())
         },
-        BotsSortBy::Popularity =>
-            super::execute_search(searcher, query, results, id_field, collector, bots::get_bot_guild_count, order),
-        BotsSortBy::Premium =>
-            super::execute_search(searcher, query, results, id_field, collector, bots::get_bot_premium, order),
-        BotsSortBy::Trending =>
-            super::execute_search(searcher, query, results, id_field, collector, bots::get_bot_trending_score, order),
-        BotsSortBy::Votes =>
-            super::execute_search(searcher, query, results, id_field, collector, bots::get_bot_votes, order),
+        BotsSortBy::Popularity => super::execute_search(
+            searcher,
+            query,
+            results,
+            id_field,
+            collector,
+            bots::get_bot_guild_count,
+            order,
+        ),
+        BotsSortBy::Premium => super::execute_search(
+            searcher,
+            query,
+            results,
+            id_field,
+            collector,
+            bots::get_bot_premium,
+            order,
+        ),
+        BotsSortBy::Trending => super::execute_search(
+            searcher,
+            query,
+            results,
+            id_field,
+            collector,
+            bots::get_bot_trending_score,
+            order,
+        ),
+        BotsSortBy::Votes => super::execute_search(
+            searcher,
+            query,
+            results,
+            id_field,
+            collector,
+            bots::get_bot_votes,
+            order,
+        ),
     };
 
     Ok(())
 }
-
-
-
-

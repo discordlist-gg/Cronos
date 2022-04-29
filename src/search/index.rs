@@ -1,5 +1,1 @@
-pub struct Index {
-
-}
-
-
+pub struct Index {}
