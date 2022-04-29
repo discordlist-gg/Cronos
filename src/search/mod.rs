@@ -3,7 +3,7 @@ use tantivy::Document;
 
 mod index;
 mod queries;
-mod readers;
+pub mod readers;
 mod tokenizer;
 
 pub trait FromTantivyDoc: Sized {

@@ -70,3 +70,24 @@ pub async fn refresh_latest_votes() -> Result<()> {
 
     Ok(())
 }
+
+#[inline]
+pub fn get_pack_likes(pack_id: i64) -> u64 {
+    let guard = VOTE_INFO.load();
+    guard.get(&pack_id).map(|v| v.votes()).unwrap_or_default()
+}
+
+#[inline]
+pub fn get_pack_premium(_pack_id: i64) -> bool {
+    false
+}
+
+#[inline]
+pub fn get_pack_trending_score(_pack_id: i64) -> f64 {
+    0.0
+}
+
+#[inline]
+pub fn get_pack_bot_count(_pack_id: i64) -> u64 {
+    0
+}

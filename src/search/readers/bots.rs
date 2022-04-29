@@ -110,6 +110,8 @@ impl InnerReader {
     }
 }
 
+
+#[allow(clippy::too_many_arguments)]
 fn execute_search<T: FromTantivyDoc>(
     id_field: Field,
     search_fields: &[Field],
@@ -204,7 +206,7 @@ fn search_docs(
             bots::get_bot_votes,
             order,
         ),
-    };
+    }?;
 
     Ok(())
 }
