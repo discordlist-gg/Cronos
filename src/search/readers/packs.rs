@@ -52,7 +52,7 @@ impl Deref for BotsReader {
 pub struct InnerReader {
     id_field: Field,
     reader: IndexReader,
-    concurrency_limiter: Semaphore,
+    concurrency_limiter: Arc<Semaphore>,
     search_fields: Arc<Vec<Field>>,
 }
 
@@ -61,10 +61,8 @@ impl InnerReader {
         id_field: Field,
         search_fields: Vec<Field>,
         reader: IndexReader,
-        max_concurrency: usize,
+        concurrency_limiter: Arc<Semaphore>,
     ) -> Self {
-        let concurrency_limiter = Semaphore::new(max_concurrency);
-
         Self {
             id_field,
             reader,
