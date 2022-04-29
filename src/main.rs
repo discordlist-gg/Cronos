@@ -20,6 +20,7 @@ use tracing_subscriber::filter::LevelFilter;
 pub(crate) mod models;
 mod routes;
 pub(crate) mod search;
+mod tasks;
 
 type Ratelimiter = governor::RateLimiter<
     String,
@@ -71,6 +72,8 @@ async fn main() -> Result<()> {
 
         models::connection::connect(&nodes, args.init_tables).await?;
     }
+
+    tasks::start_vote_update_tasks();
 
     let api_service = OpenApiService::new(
         (routes::bots::BotApi, routes::packs::PackApi),

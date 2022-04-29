@@ -92,3 +92,24 @@ pub async fn refresh_latest_votes() -> Result<()> {
 
     Ok(())
 }
+
+#[inline]
+pub fn get_bot_votes(bot_id: i64) -> u64 {
+    let guard = VOTE_INFO.load();
+    guard.get(&bot_id).map(|v| v.votes()).unwrap_or_default()
+}
+
+#[inline]
+pub fn get_bot_premium(_bot_id: i64) -> bool {
+    false
+}
+
+#[inline]
+pub fn get_bot_trending_score(_bot_id: i64) -> f64 {
+    0.0
+}
+
+#[inline]
+pub fn get_bot_guild_count(_bot_id: i64) -> u64 {
+    0
+}
