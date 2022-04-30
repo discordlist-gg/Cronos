@@ -4,24 +4,16 @@ use std::sync::Arc;
 use anyhow::Result;
 use once_cell::sync::OnceCell;
 use poem_openapi::Enum;
-use tantivy::aggregation::agg_req::{
-    Aggregation,
-    Aggregations,
-    BucketAggregation,
-    BucketAggregationType,
-};
-use tantivy::aggregation::agg_result::{AggregationResult, BucketResult};
-use tantivy::aggregation::bucket::TermsAggregation;
-use tantivy::aggregation::AggregationCollector;
-use tantivy::collector::{Count, TopDocs};
+use tantivy::collector::TopDocs;
 use tantivy::query::Query;
 use tantivy::schema::Field;
 use tantivy::{DocAddress, IndexReader, Searcher};
 use tokio::sync::{oneshot, Semaphore};
 
 use crate::models::bots;
-use crate::search::readers::Order;
+use crate::search::readers::{extract_search_data, Order, SearchResult};
 use crate::search::FromTantivyDoc;
+use crate::search::index_impls::bots::TAGS_FIELD;
 
 static BOT_READER: OnceCell<InnerReader> = OnceCell::new();
 
@@ -88,19 +80,18 @@ impl InnerReader {
 
     pub async fn search<T>(
         &self,
-        query: &str,
+        query: Option<String>,
         limit: usize,
         offset: usize,
         sort_by: BotsSortBy,
         order: Order,
-    ) -> Result<(usize, HashMap<String, usize>, Vec<T>)>
+    ) -> Result<SearchResult<T>>
     where
         T: FromTantivyDoc + Sync + Send + 'static,
     {
         let _permit = self.concurrency_limiter.acquire().await?;
         let (waker, rx) = oneshot::channel();
 
-        let query = query.to_string();
         let searcher = self.reader.searcher();
         let id = self.id_field;
         let fields = self.search_fields.clone();
@@ -125,17 +116,20 @@ impl InnerReader {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn execute_search<T: FromTantivyDoc>(
+fn execute_search<T>(
     id_field: Field,
     search_fields: &[Field],
     searcher: &Searcher,
-    query: String,
+    query: Option<String>,
     limit: usize,
     offset: usize,
     sort_by: BotsSortBy,
     order: Order,
-) -> Result<(usize, HashMap<String, usize>, Vec<T>)> {
-    let query_stages = crate::search::queries::parse_query(&query, search_fields);
+) -> Result<SearchResult<T>>
+where
+    T: FromTantivyDoc + Sync + Send + 'static
+{
+    let query_stages = crate::search::queries::parse_query(query.as_deref(), search_fields);
     let mut result_addresses = vec![];
 
     for stage in query_stages {
@@ -154,55 +148,17 @@ fn execute_search<T: FromTantivyDoc>(
         }
     }
 
+    let (count, dist) = super::search_aggregate(
+        query.as_deref(),
+        TAGS_FIELD.to_string(),
+        search_fields,
+        searcher,
+    )?;
+
     let docs = result_addresses.into_iter().skip(offset);
-
-    let mut loaded = vec![];
-    for doc in docs {
-        let doc = searcher.doc(doc)?;
-        loaded.push(T::from_doc(id_field, doc)?);
-    }
-
-    let (count, dist) = search_aggregate(&query, search_fields, searcher)?;
+    let loaded = extract_search_data(searcher, id_field, docs)?;
 
     Ok((count, dist, loaded))
-}
-
-fn search_aggregate(
-    query: &str,
-    fields: &[Field],
-    searcher: &Searcher,
-) -> Result<(usize, HashMap<String, usize>)> {
-    let distribution_query = crate::search::queries::distribution_query(query, fields);
-
-    let mut terms = TermsAggregation::default();
-    terms.size = Some(u32::MAX);
-
-    let aggs: Aggregations = vec![(
-        "tags".to_string(),
-        Aggregation::Bucket(BucketAggregation {
-            bucket_agg: BucketAggregationType::Terms(terms),
-            sub_aggregation: Aggregations::new(),
-        }),
-    )]
-    .into_iter()
-    .collect();
-    let collector = AggregationCollector::from_aggs(aggs);
-
-    let (count, terms) = searcher.search(&distribution_query, &(Count, collector))?;
-
-    let (_, first_agg) = terms.0.into_iter().next().unwrap();
-    let mut distributions = HashMap::new();
-    if let AggregationResult::BucketResult(BucketResult::Terms { buckets, .. }) =
-        first_agg
-    {
-        distributions.extend(
-            buckets
-                .into_iter()
-                .map(|v| (v.key.to_string(), v.doc_count as usize)),
-        );
-    }
-
-    Ok((count, distributions))
 }
 
 fn search_docs(

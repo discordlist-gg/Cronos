@@ -9,5 +9,5 @@ mod tokenizer;
 mod writer;
 
 pub trait FromTantivyDoc: Sized {
-    fn from_doc(id_field: Field, doc: Document) -> anyhow::Result<Self>;
+    fn from_doc(id_field: Field, doc: Document) -> Option<Self>;
 }

@@ -105,7 +105,7 @@ static LIVE_DATA: Lazy<concread::hashmap::HashMap<i64, Pack>> =
     Lazy::new(Default::default);
 
 #[inline]
-pub fn pack_data(id: i64) -> Option<Pack> {
+pub fn get_pack_data(id: i64) -> Option<Pack> {
     let mut txn = LIVE_DATA.read();
     txn.get(&id).cloned()
 }

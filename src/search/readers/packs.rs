@@ -10,8 +10,9 @@ use tantivy::{DocAddress, IndexReader, Searcher};
 use tokio::sync::{oneshot, Semaphore};
 
 use crate::models::packs;
-use crate::search::readers::Order;
+use crate::search::readers::{extract_search_data, Order, SearchResult};
 use crate::search::FromTantivyDoc;
+use crate::search::index_impls::packs::TAG_FIELD;
 
 static PACK_READER: OnceCell<InnerReader> = OnceCell::new();
 
@@ -78,19 +79,18 @@ impl InnerReader {
 
     pub async fn search<T>(
         &self,
-        query: &str,
+        query: Option<String>,
         limit: usize,
         offset: usize,
         sort_by: PacksSortBy,
         order: Order,
-    ) -> Result<Vec<T>>
+    ) -> Result<SearchResult<T>>
     where
         T: FromTantivyDoc + Sync + Send + 'static,
     {
         let _permit = self.concurrency_limiter.acquire().await?;
         let (waker, rx) = oneshot::channel();
 
-        let query = query.to_string();
         let searcher = self.reader.searcher();
         let id = self.id_field;
         let fields = self.search_fields.clone();
@@ -115,17 +115,20 @@ impl InnerReader {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn execute_search<T: FromTantivyDoc>(
+fn execute_search<T>(
     id_field: Field,
     search_fields: &[Field],
     searcher: &Searcher,
-    query: String,
+    query: Option<String>,
     limit: usize,
     offset: usize,
     sort_by: PacksSortBy,
     order: Order,
-) -> Result<Vec<T>> {
-    let query_stages = crate::search::queries::parse_query(&query, search_fields);
+) -> Result<SearchResult<T>>
+where
+    T: FromTantivyDoc + Sync + Send + 'static
+{
+    let query_stages = crate::search::queries::parse_query(query.as_deref(), search_fields);
     let mut result_addresses = vec![];
 
     for stage in query_stages {
@@ -144,15 +147,17 @@ fn execute_search<T: FromTantivyDoc>(
         }
     }
 
+    let (count, dist) = super::search_aggregate(
+        query.as_deref(),
+        TAG_FIELD.to_string(),
+        search_fields,
+        searcher,
+    )?;
+
     let docs = result_addresses.into_iter().skip(offset);
+    let loaded = extract_search_data(searcher, id_field, docs)?;
 
-    let mut loaded = vec![];
-    for doc in docs {
-        let doc = searcher.doc(doc)?;
-        loaded.push(T::from_doc(id_field, doc)?);
-    }
-
-    Ok(loaded)
+    Ok((count, dist, loaded))
 }
 
 fn search_docs(

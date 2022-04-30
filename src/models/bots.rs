@@ -23,8 +23,7 @@ use crate::search::index_impls::bots::{
 };
 use crate::{derive_fetch_by_id, derive_fetch_iter};
 
-#[derive(Object, FromRow, FieldNamesAsArray, Debug, Clone)]
-#[oai(rename_all = "camelCase")]
+#[derive(FromRow, FieldNamesAsArray, Debug, Clone)]
 pub struct Bot {
     /// The snowflake ID of the bot.
     pub id: JsSafeBigInt,
@@ -130,7 +129,7 @@ static LIVE_DATA: Lazy<concread::hashmap::HashMap<i64, Bot>> =
     Lazy::new(Default::default);
 
 #[inline]
-pub fn bot_data(id: i64) -> Option<Bot> {
+pub fn get_bot_data(id: i64) -> Option<Bot> {
     let mut txn = LIVE_DATA.read();
     txn.get(&id).cloned()
 }

@@ -1,14 +1,22 @@
 use std::cmp::Reverse;
+use std::collections::HashMap;
 
 use poem_openapi::Enum;
-use tantivy::collector::TopDocs;
+use tantivy::collector::{Count, TopDocs};
 use tantivy::fastfield::FastFieldReader;
 use tantivy::query::Query;
 use tantivy::schema::Field;
 use tantivy::{DocAddress, DocId, Score, Searcher, SegmentReader};
+use tantivy::aggregation::agg_req::{Aggregation, Aggregations, BucketAggregation, BucketAggregationType};
+use tantivy::aggregation::agg_result::{AggregationResult, BucketResult};
+use tantivy::aggregation::AggregationCollector;
+use tantivy::aggregation::bucket::TermsAggregation;
+use crate::search::FromTantivyDoc;
 
 pub mod bots;
 pub mod packs;
+
+pub(crate) type SearchResult<T> = (usize, HashMap<String, usize>, Vec<T>);
 
 #[derive(Enum, Debug, Copy, Clone)]
 pub enum Order {
@@ -101,4 +109,64 @@ where
     results.extend(docs.into_iter().map(|v| v.1));
 
     Ok(())
+}
+
+pub(crate) fn extract_search_data<T>(
+    searcher: &Searcher,
+    id_field: Field,
+    address: impl Iterator<Item = DocAddress>,
+) -> anyhow::Result<Vec<T>>
+where
+    T: FromTantivyDoc + Sync + Send + 'static
+{
+    let mut loaded = vec![];
+    for doc in address {
+        let doc = searcher.doc(doc)?;
+        if let Some(doc) = T::from_doc(id_field, doc) {
+            loaded.push(doc);
+        }
+    }
+
+    Ok(loaded)
+}
+
+
+fn search_aggregate(
+    query: Option<&str>,
+    field_name: String,
+    fields: &[Field],
+    searcher: &Searcher,
+) -> anyhow::Result<(usize, HashMap<String, usize>)> {
+    let distribution_query = crate::search::queries::distribution_query(query, fields);
+
+    let mut terms = TermsAggregation::default();
+    terms.field = field_name;
+    terms.size = Some(u32::MAX);
+
+    let aggs: Aggregations = vec![(
+        "tags".to_string(),
+        Aggregation::Bucket(BucketAggregation {
+            bucket_agg: BucketAggregationType::Terms(terms),
+            sub_aggregation: Aggregations::new(),
+        }),
+    )]
+    .into_iter()
+    .collect();
+    let collector = AggregationCollector::from_aggs(aggs);
+
+    let (count, terms) = searcher.search(&distribution_query, &(Count, collector))?;
+
+    let (_, first_agg) = terms.0.into_iter().next().unwrap();
+    let mut distributions = HashMap::new();
+    if let AggregationResult::BucketResult(BucketResult::Terms { buckets, .. }) =
+        first_agg
+    {
+        distributions.extend(
+            buckets
+                .into_iter()
+                .map(|v| (v.key.to_string(), v.doc_count as usize)),
+        );
+    }
+
+    Ok((count, distributions))
 }
