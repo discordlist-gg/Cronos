@@ -1,18 +1,17 @@
 use std::collections::HashMap;
+
 use backend_common::tags::BotTags;
 use backend_common::types::{JsSafeBigInt, JsSafeInt, Set, Timestamp};
-
 use poem::Result;
 use poem_openapi::payload::Json;
 use poem_openapi::{ApiResponse, Object, OpenApi};
-use tantivy::Document;
 use tantivy::schema::Field;
+use tantivy::Document;
 
-use crate::models::bots::{Bot, get_bot_data};
-use crate::search::FromTantivyDoc;
-use crate::search::readers;
+use crate::models::bots::{get_bot_data, Bot};
 use crate::search::readers::bots::BotsSortBy;
 use crate::search::readers::Order;
+use crate::search::{readers, FromTantivyDoc};
 
 #[derive(Debug, Object)]
 #[oai(rename_all = "camelCase")]
@@ -73,10 +72,7 @@ impl From<Bot> for BotHit {
             flags: bot.features,
             features: bot.features,
             permissions: bot.permissions,
-            tags: bot.tags
-                .iter()
-                .map(|v| v.name.to_string())
-                .collect(),
+            tags: bot.tags.iter().map(|v| v.name.to_string()).collect(),
             created_on: bot.created_on,
             owner_id: bot.owner_id,
             co_owner_ids: bot.co_owner_ids,

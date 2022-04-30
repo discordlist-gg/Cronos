@@ -1,18 +1,19 @@
 use std::collections::HashMap;
+
 use backend_common::tags::{BotTags, PackTags};
 use backend_common::types::{JsSafeBigInt, JsSafeInt, Set, Timestamp};
-use poem_openapi::{OpenApi, Object};
-use poem_openapi::payload::Json;
-use tantivy::Document;
-use tantivy::schema::Field;
 use poem::Result;
+use poem_openapi::payload::Json;
+use poem_openapi::{Object, OpenApi};
+use tantivy::schema::Field;
+use tantivy::Document;
 
 use crate::models::bots::get_bot_data;
 use crate::models::packs::get_pack_data;
 use crate::routes::bots::BotHit;
-use crate::search::{FromTantivyDoc, readers};
-use crate::search::readers::Order;
 use crate::search::readers::packs::PacksSortBy;
+use crate::search::readers::Order;
+use crate::search::{readers, FromTantivyDoc};
 
 #[derive(Debug, Object)]
 #[oai(rename_all = "camelCase")]
@@ -46,7 +47,8 @@ impl FromTantivyDoc for PackHit {
     fn from_doc(id_field: Field, doc: Document) -> Option<Self> {
         let id = doc.get_first(id_field)?.as_i64()?;
         let pack = get_pack_data(id)?;
-        let bots = pack.bots
+        let bots = pack
+            .bots
             .iter()
             .filter_map(|v| get_bot_data(v.0))
             .map(|v| BotHit::from(v))
@@ -60,10 +62,11 @@ impl FromTantivyDoc for PackHit {
             co_owner_ids: pack.co_owner_ids,
             description: pack.description,
             bots,
-            tag: pack.tag
+            tag: pack
+                .tag
                 .first()
                 .map(|v| v.name.to_string())
-                .unwrap_or_default()
+                .unwrap_or_default(),
         })
     }
 }

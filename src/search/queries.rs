@@ -17,7 +17,7 @@ pub fn distribution_query(query: Option<&str>, fields: &[Field]) -> Box<dyn Quer
         None => return Box::new(AllQuery {}),
         Some(q) => q,
     };
-    
+
     let tokenizer = SimpleUnicodeTokenizer::with_limit(10);
     let mut token_stream = tokenizer.token_stream(query);
 
@@ -29,7 +29,7 @@ pub fn parse_query(query: Option<&str>, fields: &[Field]) -> Vec<Box<dyn Query>>
         None => return vec![Box::new(AllQuery {})],
         Some(q) => q,
     };
-        
+
     let tokenizer = SimpleUnicodeTokenizer::with_limit(10);
     let mut token_stream = tokenizer.token_stream(query);
     let mut stages = vec![];

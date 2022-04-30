@@ -11,9 +11,9 @@ use tantivy::{DocAddress, IndexReader, Searcher};
 use tokio::sync::{oneshot, Semaphore};
 
 use crate::models::bots;
+use crate::search::index_impls::bots::TAGS_FIELD;
 use crate::search::readers::{extract_search_data, Order, SearchResult};
 use crate::search::FromTantivyDoc;
-use crate::search::index_impls::bots::TAGS_FIELD;
 
 static BOT_READER: OnceCell<InnerReader> = OnceCell::new();
 
@@ -127,9 +127,10 @@ fn execute_search<T>(
     order: Order,
 ) -> Result<SearchResult<T>>
 where
-    T: FromTantivyDoc + Sync + Send + 'static
+    T: FromTantivyDoc + Sync + Send + 'static,
 {
-    let query_stages = crate::search::queries::parse_query(query.as_deref(), search_fields);
+    let query_stages =
+        crate::search::queries::parse_query(query.as_deref(), search_fields);
     let mut result_addresses = vec![];
 
     for stage in query_stages {

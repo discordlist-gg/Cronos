@@ -2,15 +2,21 @@ use std::cmp::Reverse;
 use std::collections::HashMap;
 
 use poem_openapi::Enum;
+use tantivy::aggregation::agg_req::{
+    Aggregation,
+    Aggregations,
+    BucketAggregation,
+    BucketAggregationType,
+};
+use tantivy::aggregation::agg_result::{AggregationResult, BucketResult};
+use tantivy::aggregation::bucket::TermsAggregation;
+use tantivy::aggregation::AggregationCollector;
 use tantivy::collector::{Count, TopDocs};
 use tantivy::fastfield::FastFieldReader;
 use tantivy::query::Query;
 use tantivy::schema::Field;
 use tantivy::{DocAddress, DocId, Score, Searcher, SegmentReader};
-use tantivy::aggregation::agg_req::{Aggregation, Aggregations, BucketAggregation, BucketAggregationType};
-use tantivy::aggregation::agg_result::{AggregationResult, BucketResult};
-use tantivy::aggregation::AggregationCollector;
-use tantivy::aggregation::bucket::TermsAggregation;
+
 use crate::search::FromTantivyDoc;
 
 pub mod bots;
@@ -117,7 +123,7 @@ pub(crate) fn extract_search_data<T>(
     address: impl Iterator<Item = DocAddress>,
 ) -> anyhow::Result<Vec<T>>
 where
-    T: FromTantivyDoc + Sync + Send + 'static
+    T: FromTantivyDoc + Sync + Send + 'static,
 {
     let mut loaded = vec![];
     for doc in address {
@@ -129,7 +135,6 @@ where
 
     Ok(loaded)
 }
-
 
 fn search_aggregate(
     query: Option<&str>,
