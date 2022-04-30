@@ -53,7 +53,7 @@ impl Writer {
             .map_err(|_| anyhow!("Writer actor has shutdown."))
     }
 
-    pub async fn add_documents(&self, doc: Document) -> Result<()> {
+    pub async fn add_document(&self, doc: Document) -> Result<()> {
         self.send_op(WriterOp::AddDocument(doc)).await
     }
 

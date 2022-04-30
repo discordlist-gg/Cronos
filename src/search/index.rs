@@ -4,6 +4,7 @@ use tantivy::schema::Schema;
 use anyhow::Result;
 use tantivy::{Directory, IndexReader, ReloadPolicy};
 use tantivy::directory::MmapDirectory;
+use crate::search::tokenizer::SimpleUnicodeTokenizer;
 use crate::search::writer::Writer;
 
 
@@ -21,6 +22,10 @@ pub async fn open_or_create(
     } else {
         tantivy::Index::open_or_create(dir, schema)
     }?;
+
+    index
+        .tokenizers()
+        .register("default", SimpleUnicodeTokenizer::default());
 
     let reader = index.reader_builder()
         .reload_policy(ReloadPolicy::OnCommit)

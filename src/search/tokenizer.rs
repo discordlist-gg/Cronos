@@ -1,5 +1,5 @@
 use deunicode::deunicode_char;
-use tantivy::tokenizer::{SimpleTokenizer, Token, TokenStream, Tokenizer};
+use tantivy::tokenizer::{SimpleTokenizer, Token, TokenStream, Tokenizer, BoxTokenStream};
 
 #[derive(Clone)]
 pub struct SimpleUnicodeTokenizer {
@@ -21,6 +21,13 @@ impl SimpleUnicodeTokenizer {
         let tokens = produce_tokens(text, self.limit);
 
         SimpleTokenStream { tokens, pointer: 0 }
+    }
+}
+
+impl Tokenizer for SimpleUnicodeTokenizer {
+    fn token_stream<'a>(&self, text: &'a str) -> BoxTokenStream<'a> {
+        let tokens = produce_tokens(text, self.limit);
+        BoxTokenStream::from(SimpleTokenStream  { tokens, pointer: 0 })
     }
 }
 

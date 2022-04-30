@@ -11,6 +11,7 @@ description = "Dlist's premium search system built for performance and quality."
 tantivy = "0.17"
 rayon = "1"
 
+concread = "0.3.1"
 anyhow = "1.0.56"  # Error Handling
 scylla = "0.4.4"  # Database driver
 flume = "0.10.12"  # Internal communications between async <-> sync APIs

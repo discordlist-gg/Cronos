@@ -6,12 +6,14 @@ use arc_swap::ArcSwap;
 use backend_common::tags::BotTags;
 use backend_common::types::{JsSafeBigInt, JsSafeInt, Set, Timestamp};
 use backend_common::FieldNamesAsArray;
+use futures::StreamExt;
 use once_cell::sync::Lazy;
 use poem_openapi::Object;
 use scylla::FromRow;
 use tantivy::schema::Schema;
+use scylla::IntoTypedRows;
 
-use crate::derive_fetch_by_id;
+use crate::{derive_fetch_by_id, derive_fetch_iter};
 use crate::models::connection::session;
 use crate::models::utils::{process_rows, VoteStats};
 use crate::search::index_impls::bots::{ID_FIELD, TAGS_FIELD, DESCRIPTION_FIELD, USERNAME_FIELD, FEATURES_FIELD, CATEGORIES_FIELD};
@@ -76,6 +78,7 @@ pub struct Bot {
     pub brief_description: String,
 }
 derive_fetch_by_id!(Bot, table = "bots");
+derive_fetch_iter!(Bot, table = "bots");
 
 impl Bot {
     pub fn as_tantivy_doc(&self, schema: &Schema) -> tantivy::Document {
@@ -116,6 +119,47 @@ pub async fn refresh_latest_votes() -> Result<()> {
         .await?;
 
     VOTE_INFO.store(Arc::new(process_rows(iter).await));
+
+    Ok(())
+}
+
+static LIVE_DATA: Lazy<concread::hashmap::HashMap<i64, Bot>> = Lazy::new(|| Default::default());
+
+#[inline]
+pub fn bot_data(id: i64) -> Option<Bot> {
+    let mut txn = LIVE_DATA.read();
+    txn.get(&id).cloned()
+}
+#[inline]
+pub fn remove_bot_from_live(bot_id: i64) {
+    let mut txn = LIVE_DATA.write();
+    txn.remove(&bot_id);
+    txn.commit();
+}
+
+#[inline]
+pub fn update_live_data(bot: Bot) {
+    let mut txn = LIVE_DATA.write();
+    txn.insert(*bot.id, bot);
+    txn.commit();
+}
+
+pub async fn refresh_latest_data() -> Result<()> {
+    let mut iter = Bot::iter_rows()
+        .await?
+        .into_typed::<Bot>();
+
+    let mut txn = LIVE_DATA.write();
+    txn.clear();
+
+    while let Some(Ok(row)) = iter.next().await {
+        if row.is_hidden || row.is_forced_into_hiding {
+            continue
+        }
+
+        txn.insert(*row.id, row);
+    }
+    txn.commit();
 
     Ok(())
 }

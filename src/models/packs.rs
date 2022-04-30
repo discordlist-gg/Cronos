@@ -6,11 +6,13 @@ use arc_swap::ArcSwap;
 use backend_common::tags::PackTags;
 use backend_common::types::{JsSafeBigInt, Set, Timestamp};
 use backend_common::FieldNamesAsArray;
+use futures::StreamExt;
 use once_cell::sync::Lazy;
 use poem_openapi::Object;
 use scylla::FromRow;
+use scylla::IntoTypedRows;
 
-use crate::derive_fetch_by_id;
+use crate::{derive_fetch_by_id, derive_fetch_iter};
 use crate::models::connection::session;
 use crate::models::utils::{process_rows, VoteStats};
 
@@ -52,6 +54,7 @@ pub struct Pack {
     pub co_owner_ids: Set<JsSafeBigInt>,
 }
 derive_fetch_by_id!(Pack, table = "packs");
+derive_fetch_iter!(Pack, table = "packs");
 
 static VOTE_INFO: Lazy<ArcSwap<HashMap<i64, VoteStats>>> =
     Lazy::new(|| ArcSwap::from_pointee(HashMap::new()));
@@ -67,6 +70,37 @@ pub async fn refresh_latest_votes() -> Result<()> {
         .await?;
 
     VOTE_INFO.store(Arc::new(process_rows(iter).await));
+
+    Ok(())
+}
+
+static LIVE_DATA: Lazy<concread::hashmap::HashMap<i64, Pack>> = Lazy::new(|| Default::default());
+
+#[inline]
+pub fn pack_data(id: i64) -> Option<Pack> {
+    let mut txn = LIVE_DATA.read();
+    txn.get(&id).cloned()
+}
+
+#[inline]
+pub fn update_live_data(pack: Pack) {    
+    let mut txn = LIVE_DATA.write();
+    txn.insert(*pack.id, pack);
+    txn.commit();
+}
+
+pub async fn refresh_latest_data() -> Result<()> {
+    let mut iter = Pack::iter_rows()
+        .await?
+        .into_typed::<Pack>();
+
+    let mut txn = LIVE_DATA.write();
+    txn.clear();
+
+    while let Some(Ok(row)) = iter.next().await {
+        txn.insert(*row.id, row);
+    }
+    txn.commit();
 
     Ok(())
 }

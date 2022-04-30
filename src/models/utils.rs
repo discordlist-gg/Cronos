@@ -33,6 +33,28 @@ macro_rules! derive_fetch_by_id {
     };
 }
 
+#[macro_export]
+macro_rules! derive_fetch_iter {
+    ($slf:ident, table = $tbl:expr) => {
+        impl $slf {
+            pub async fn iter_rows() -> Result<scylla::transport::iterator::RowIterator> {
+                use super::connection::session;
+
+                let qry = format!(
+                    "SELECT {} FROM {};",
+                    $slf::FIELD_NAMES_AS_ARRAY.join(", "),
+                    $tbl,
+                );
+
+                session()
+                    .query_iter(&qry, &[])
+                    .await
+                    .map_err(anyhow::Error::from)
+            }
+        }
+    };
+}
+
 #[derive(Debug, Default, Copy, Clone)]
 pub struct VoteStats {
     votes: u64,
