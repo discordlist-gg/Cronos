@@ -164,7 +164,10 @@ pub struct BotApi;
 
 #[OpenApi]
 impl BotApi {
-    #[oai(path = "/bots/:id", method = "post")]
+    /// Update Bot Data
+    ///
+    /// This internally pulls data from the database.
+    #[oai(path = "/bots/:id", method = "post", tag = "crate::ApiTags::Bots")]
     pub async fn update_bot(&self, id: Path<u64>) -> Result<StandardResponse> {
         index_impls::bots::writer()
             .upsert_bot(*id as i64)
@@ -173,7 +176,8 @@ impl BotApi {
         Ok(StandardResponse::Ok)
     }
 
-    #[oai(path = "/bots/:id", method = "delete")]
+    /// Remove Bot Data
+    #[oai(path = "/bots/:id", method = "delete", tag = "crate::ApiTags::Bots")]
     pub async fn remove_bot(&self, id: Path<u64>) -> Result<StandardResponse> {
         index_impls::bots::writer()
             .remove_bot(*id as i64)
@@ -182,7 +186,8 @@ impl BotApi {
         Ok(StandardResponse::Ok)
     }
 
-    #[oai(path = "/bots/refresh", method = "post")]
+    /// Refresh Bot Data
+    #[oai(path = "/bots/refresh", method = "post", tag = "crate::ApiTags::Bots")]
     pub async fn refresh_bots(&self) -> Result<StandardResponse> {
         index_impls::bots::writer()
             .full_refresh()
@@ -191,7 +196,8 @@ impl BotApi {
         Ok(StandardResponse::Ok)
     }
 
-    #[oai(path = "/bots/search", method = "post")]
+    /// Search Bots
+    #[oai(path = "/bots/search", method = "post", tag = "crate::ApiTags::Bots")]
     pub async fn search(
         &self,
         payload: Json<BotSearchPayload>,

@@ -115,7 +115,7 @@ pub struct PackFilter {
 #[oai(rename_all = "camelCase")]
 pub struct PackSearchResult {
     /// The search results themselves.
-    hits: Vec<BotHit>,
+    hits: Vec<PackHit>,
 
     /// The maximum amount of docs that could get returned.
     limit: usize,
@@ -140,7 +140,10 @@ pub struct PackApi;
 
 #[OpenApi]
 impl PackApi {
-    #[oai(path = "/packs/:id", method = "post")]
+    /// Update Pack Data
+    ///
+    /// This internally pulls data from the database.
+    #[oai(path = "/packs/:id", method = "post", tag = "crate::ApiTags::Packs")]
     pub async fn update_pack(&self, id: Path<u64>) -> Result<StandardResponse> {
         index_impls::packs::writer()
             .upsert_pack(*id as i64)
@@ -149,7 +152,8 @@ impl PackApi {
         Ok(StandardResponse::Ok)
     }
 
-    #[oai(path = "/packs/:id", method = "delete")]
+    /// Remove Pack Data
+    #[oai(path = "/packs/:id", method = "delete", tag = "crate::ApiTags::Packs")]
     pub async fn remove_pack(&self, id: Path<u64>) -> Result<StandardResponse> {
         index_impls::packs::writer()
             .remove_pack(*id as i64)
@@ -158,7 +162,8 @@ impl PackApi {
         Ok(StandardResponse::Ok)
     }
 
-    #[oai(path = "/packs/refresh", method = "post")]
+    /// Refresh Packs
+    #[oai(path = "/packs/refresh", method = "post", tag = "crate::ApiTags::Packs")]
     pub async fn refresh_packs(&self) -> Result<StandardResponse> {
         index_impls::packs::writer()
             .full_refresh()
@@ -167,7 +172,8 @@ impl PackApi {
         Ok(StandardResponse::Ok)
     }
 
-    #[oai(path = "/packs/search", method = "post")]
+    /// Search Packs
+    #[oai(path = "/packs/search", method = "post", tag = "crate::ApiTags::Packs")]
     pub async fn search(
         &self,
         payload: Json<PackSearchPayload>,
@@ -177,7 +183,7 @@ impl PackApi {
         let query = payload.0.query.clone();
 
         let (num_hits, dist, hits) = readers::packs::reader()
-            .search::<BotHit>(
+            .search::<PackHit>(
                 payload.0.query,
                 limit,
                 offset,
