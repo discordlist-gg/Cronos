@@ -183,6 +183,15 @@ impl BotApi {
         Ok(StandardResponse::Ok)
     }
 
+    #[oai(path = "/bots", method = "put")]
+    pub async fn refresh_bots(&self) -> Result<StandardResponse> {
+        index_impls::bots::writer()
+            .full_refresh()
+            .await?;
+
+        Ok(StandardResponse::Ok)
+    }
+
     #[oai(path = "/bots/search", method = "post")]
     pub async fn search(
         &self,

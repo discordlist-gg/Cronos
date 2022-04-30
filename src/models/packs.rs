@@ -8,6 +8,7 @@ use backend_common::types::{JsSafeBigInt, Set, Timestamp};
 use backend_common::FieldNamesAsArray;
 use futures::StreamExt;
 use once_cell::sync::Lazy;
+use parking_lot::RwLock;
 use poem_openapi::Object;
 use scylla::FromRow;
 use tantivy::schema::Schema;
@@ -101,8 +102,7 @@ pub async fn refresh_latest_votes() -> Result<()> {
     Ok(())
 }
 
-static LIVE_DATA: Lazy<concread::hashmap::HashMap<i64, Pack>> =
-    Lazy::new(Default::default);
+static LIVE_DATA: Lazy<RwLock<HashMap<i64, Pack>>> =Lazy::new(Default::default);
 
 #[inline]
 pub fn get_pack_data(id: i64) -> Option<Pack> {
@@ -114,26 +114,33 @@ pub fn get_pack_data(id: i64) -> Option<Pack> {
 pub fn remove_pack_from_live(pack_id: i64) {
     let mut txn = LIVE_DATA.write();
     txn.remove(&pack_id);
-    txn.commit();
 }
 
 #[inline]
 pub fn update_live_data(pack: Pack) {
     let mut txn = LIVE_DATA.write();
     txn.insert(*pack.id, pack);
-    txn.commit();
+}
+
+pub fn all_packs() -> Vec<Pack> {
+    let txn = LIVE_DATA.read();
+    txn.iter().map(|(_, v)| v.clone()).collect()
 }
 
 pub async fn refresh_latest_data() -> Result<()> {
     let mut iter = Pack::iter_rows().await?.into_typed::<Pack>();
 
-    let mut txn = LIVE_DATA.write();
-    txn.clear();
-
+    let mut packs = HashMap::new();
     while let Some(Ok(row)) = iter.next().await {
-        txn.insert(*row.id, row);
+        if row.is_hidden || row.is_forced_into_hiding {
+            continue;
+        }
+
+        packs.insert(*row.id, row);
     }
-    txn.commit();
+
+    let mut lock = LIVE_DATA.write();
+    (*lock) = packs;
 
     Ok(())
 }

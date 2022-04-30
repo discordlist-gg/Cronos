@@ -6,6 +6,7 @@ use once_cell::sync::OnceCell;
 use tantivy::schema::{Field, Schema, SchemaBuilder, FAST, INDEXED, STORED, TEXT};
 use tantivy::Term;
 use tokio::sync::Semaphore;
+use crate::models;
 
 use crate::models::packs::{remove_pack_from_live, update_live_data, Pack};
 use crate::search::index;
@@ -83,6 +84,17 @@ impl PackIndex {
         self.writer.add_document(doc).await?;
 
         update_live_data(pack);
+
+        Ok(())
+    }
+
+    pub async fn full_refresh(&self) -> Result<()> {
+        self.writer.clear_all_docs().await?;
+        models::packs::refresh_latest_data().await?;
+
+        for pack in models::packs::all_packs() {
+            todo!()
+        }
 
         Ok(())
     }

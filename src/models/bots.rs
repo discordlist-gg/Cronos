@@ -8,6 +8,7 @@ use backend_common::types::{JsSafeBigInt, JsSafeInt, Set, Timestamp};
 use backend_common::FieldNamesAsArray;
 use futures::StreamExt;
 use once_cell::sync::Lazy;
+use parking_lot::RwLock;
 use scylla::FromRow;
 use tantivy::schema::Schema;
 
@@ -124,8 +125,7 @@ pub async fn refresh_latest_votes() -> Result<()> {
     Ok(())
 }
 
-static LIVE_DATA: Lazy<concread::hashmap::HashMap<i64, Bot>> =
-    Lazy::new(Default::default);
+static LIVE_DATA: Lazy<RwLock<HashMap<i64, Bot>>> = Lazy::new(Default::default);
 
 #[inline]
 pub fn get_bot_data(id: i64) -> Option<Bot> {
@@ -137,30 +137,33 @@ pub fn get_bot_data(id: i64) -> Option<Bot> {
 pub fn remove_bot_from_live(bot_id: i64) {
     let mut txn = LIVE_DATA.write();
     txn.remove(&bot_id);
-    txn.commit();
 }
 
 #[inline]
 pub fn update_live_data(bot: Bot) {
     let mut txn = LIVE_DATA.write();
     txn.insert(*bot.id, bot);
-    txn.commit();
+}
+
+pub fn all_bots() -> Vec<Bot> {
+    let txn = LIVE_DATA.read();
+    txn.iter().map(|(_, v)| v.clone()).collect()
 }
 
 pub async fn refresh_latest_data() -> Result<()> {
     let mut iter = Bot::iter_rows().await?.into_typed::<Bot>();
 
-    let mut txn = LIVE_DATA.write();
-    txn.clear();
-
+    let mut bots = HashMap::new();
     while let Some(Ok(row)) = iter.next().await {
         if row.is_hidden || row.is_forced_into_hiding {
             continue;
         }
 
-        txn.insert(*row.id, row);
+        bots.insert(*row.id, row);
     }
-    txn.commit();
+
+    let mut lock = LIVE_DATA.write();
+    (*lock) = bots;
 
     Ok(())
 }

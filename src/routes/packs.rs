@@ -158,6 +158,15 @@ impl PackApi {
         Ok(StandardResponse::Ok)
     }
 
+    #[oai(path = "/packs", method = "put")]
+    pub async fn refresh_packs(&self) -> Result<StandardResponse> {
+        index_impls::packs::writer()
+            .full_refresh()
+            .await?;
+
+        Ok(StandardResponse::Ok)
+    }
+
     #[oai(path = "/packs/search", method = "post")]
     pub async fn search(
         &self,
