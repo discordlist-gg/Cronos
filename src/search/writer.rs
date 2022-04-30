@@ -84,7 +84,7 @@ fn run_writer(index: Index, tasks: flume::Receiver<WriterOp>) -> anyhow::Result<
             info!("parking writer until new events present");
             if let Ok(op) = tasks.recv() {
                 op_since_last_commit = true;
-                handle_message(op, &mut writer);
+                handle_message(op, &mut writer)?;
             } else {
                 info!("writer actor channel dropped, shutting down...");
                 break;
@@ -105,7 +105,7 @@ fn run_writer(index: Index, tasks: flume::Receiver<WriterOp>) -> anyhow::Result<
                 break;
             },
             Ok(op) => {
-                handle_message(op, &mut writer);
+                handle_message(op, &mut writer)?;
             },
         }
     }
