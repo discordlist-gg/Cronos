@@ -12,6 +12,13 @@ macro_rules! add_if_exists {
     }};
 }
 
+pub fn distribution_query(query: &str, fields: &[Field]) -> Box<dyn Query> {
+    let tokenizer = SimpleUnicodeTokenizer::with_limit(10);
+    let mut token_stream = tokenizer.token_stream(query);
+
+    build_fuzzy_stage(2, 0, fields, &mut token_stream).unwrap()
+}
+
 pub fn parse_query(query: &str, fields: &[Field]) -> Vec<Box<dyn Query>> {
     let tokenizer = SimpleUnicodeTokenizer::with_limit(10);
     let mut token_stream = tokenizer.token_stream(query);

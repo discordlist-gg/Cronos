@@ -124,6 +124,7 @@ fn execute_search<T: FromTantivyDoc>(
     sort_by: BotsSortBy,
     order: Order,
 ) -> Result<Vec<T>> {
+    let distribution_query = crate::search::queries::distribution_query(&query, search_fields);
     let query_stages = crate::search::queries::parse_query(&query, search_fields);
     let mut result_addresses = vec![];
 

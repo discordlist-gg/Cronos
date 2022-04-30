@@ -16,7 +16,7 @@ use tantivy::schema::Schema;
 use crate::{derive_fetch_by_id, derive_fetch_iter};
 use crate::models::connection::session;
 use crate::models::utils::{process_rows, VoteStats};
-use crate::search::index_impls::packs::{DESCRIPTION_FIELD, ID_FIELD, NAME_FIELD, TAG_FIELD};
+use crate::search::index_impls::packs::{DESCRIPTION_FIELD, ID_FIELD, NAME_FIELD, TAG_FIELD, TAG_ID_FIELD};
 
 #[derive(Object, FromRow, FieldNamesAsArray, Debug, Clone)]
 #[oai(rename_all = "camelCase")]
@@ -66,6 +66,7 @@ impl Pack {
         let name_field = schema.get_field(NAME_FIELD).unwrap();
         let description_field = schema.get_field(DESCRIPTION_FIELD).unwrap();
         let tag_field = schema.get_field(TAG_FIELD).unwrap();
+        let tag_id_field = schema.get_field(TAG_ID_FIELD).unwrap();
 
         document.add_i64(id_field, *self.id);
         document.add_text(name_field, &self.name);
@@ -73,6 +74,7 @@ impl Pack {
 
         if let Some(tag) = self.tag.iter().next() {
             document.add_text(tag_field, &tag.name);
+            document.add_u64(tag_id_field, fasthash::city::hash64(&tag.name));
         }
 
         document

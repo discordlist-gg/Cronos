@@ -15,8 +15,8 @@ pub static ID_FIELD: &str = "id";
 pub static FEATURES_FIELD: &str = "features";
 pub static USERNAME_FIELD: &str = "username";
 pub static DESCRIPTION_FIELD: &str = "brief_description";
-pub static CATEGORIES_FIELD: &str = "categories";
 pub static TAGS_FIELD: &str = "tags";
+pub static TAG_IDS_FIELD: &str = "tag_ids";
 
 static BOT_INDEX: OnceCell<BotIndex> = OnceCell::new();
 
@@ -50,7 +50,6 @@ impl BotIndex {
             schema.get_field(USERNAME_FIELD).unwrap(),
             schema.get_field(DESCRIPTION_FIELD).unwrap(),
             schema.get_field(TAGS_FIELD).unwrap(),
-            schema.get_field(CATEGORIES_FIELD).unwrap(),
         ];
 
         bots::init(id_field, search_fields, reader, limiter);
@@ -90,7 +89,7 @@ fn default_schema() -> Schema {
     builder.add_text_field(USERNAME_FIELD, TEXT);
     builder.add_text_field(DESCRIPTION_FIELD, TEXT);
     builder.add_text_field(TAGS_FIELD, TEXT);
-    builder.add_text_field(CATEGORIES_FIELD, TEXT);
+    builder.add_u64_field(TAG_IDS_FIELD, INDEXED | FAST);
 
     builder.build()
 }

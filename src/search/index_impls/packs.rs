@@ -15,6 +15,7 @@ pub static ID_FIELD: &str = "id";
 pub static NAME_FIELD: &str = "name";
 pub static DESCRIPTION_FIELD: &str = "description";
 pub static TAG_FIELD: &str = "tag";
+pub static TAG_ID_FIELD: &str = "tag_id";
 
 static PACK_INDEX: OnceCell<PackIndex> = OnceCell::new();
 
@@ -86,6 +87,7 @@ fn default_schema() -> Schema {
     builder.add_text_field(NAME_FIELD, TEXT);
     builder.add_text_field(DESCRIPTION_FIELD, TEXT);
     builder.add_text_field(TAG_FIELD, TEXT);
+    builder.add_u64_field(TAG_ID_FIELD, INDEXED | FAST);
 
     builder.build()
 }
