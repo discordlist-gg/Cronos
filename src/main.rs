@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate tracing;
+extern crate core;
 
 use std::num::NonZeroU32;
 use std::path::Path;

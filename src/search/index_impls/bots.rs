@@ -16,7 +16,6 @@ pub static FEATURES_FIELD: &str = "features";
 pub static USERNAME_FIELD: &str = "username";
 pub static DESCRIPTION_FIELD: &str = "brief_description";
 pub static TAGS_FIELD: &str = "tags";
-pub static TAG_IDS_FIELD: &str = "tag_ids";
 
 static BOT_INDEX: OnceCell<BotIndex> = OnceCell::new();
 
@@ -89,7 +88,6 @@ fn default_schema() -> Schema {
     builder.add_text_field(USERNAME_FIELD, TEXT);
     builder.add_text_field(DESCRIPTION_FIELD, TEXT);
     builder.add_text_field(TAGS_FIELD, TEXT);
-    builder.add_u64_field(TAG_IDS_FIELD, INDEXED | FAST);
 
     builder.build()
 }

@@ -16,7 +16,7 @@ use scylla::IntoTypedRows;
 use crate::{derive_fetch_by_id, derive_fetch_iter};
 use crate::models::connection::session;
 use crate::models::utils::{process_rows, VoteStats};
-use crate::search::index_impls::bots::{ID_FIELD, TAGS_FIELD, DESCRIPTION_FIELD, USERNAME_FIELD, FEATURES_FIELD, TAG_IDS_FIELD};
+use crate::search::index_impls::bots::{ID_FIELD, TAGS_FIELD, DESCRIPTION_FIELD, USERNAME_FIELD, FEATURES_FIELD};
 
 #[derive(Object, FromRow, FieldNamesAsArray, Debug, Clone)]
 #[oai(rename_all = "camelCase")]
@@ -89,7 +89,6 @@ impl Bot {
         let description_field = schema.get_field(DESCRIPTION_FIELD).unwrap();
         let features_field = schema.get_field(FEATURES_FIELD).unwrap();
         let tags_field = schema.get_field(TAGS_FIELD).unwrap();
-        let tag_ids = schema.get_field(TAG_IDS_FIELD).unwrap();
 
         document.add_i64(id_field, *self.id);
         document.add_text(username_field, &self.username);
@@ -98,7 +97,6 @@ impl Bot {
 
         for tag in self.tags.iter() {
             document.add_text(tags_field, &tag.name);
-            document.add_u64(tag_ids, fasthash::city::hash64(&tag.name));
         }
 
         document

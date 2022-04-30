@@ -1,12 +1,18 @@
+use core::panicking::const_panic_fmt;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use anyhow::Result;
 use once_cell::sync::OnceCell;
 use poem_openapi::Enum;
-use tantivy::collector::TopDocs;
+use tantivy::collector::{Count, TopDocs};
 use tantivy::query::Query;
 use tantivy::schema::Field;
 use tantivy::{DocAddress, IndexReader, Searcher};
+use tantivy::aggregation::agg_req::{Aggregation, Aggregations, BucketAggregation, BucketAggregationType};
+use tantivy::aggregation::agg_result::{AggregationResult, BucketResult};
+use tantivy::aggregation::AggregationCollector;
+use tantivy::aggregation::bucket::TermsAggregation;
 use tokio::sync::{oneshot, Semaphore};
 
 use crate::models::bots;
@@ -81,7 +87,7 @@ impl InnerReader {
         offset: usize,
         sort_by: BotsSortBy,
         order: Order,
-    ) -> Result<Vec<T>>
+    ) -> Result<(usize, HashMap<String, usize>, Vec<T>)>
     where
         T: FromTantivyDoc + Sync + Send + 'static,
     {
@@ -123,8 +129,7 @@ fn execute_search<T: FromTantivyDoc>(
     offset: usize,
     sort_by: BotsSortBy,
     order: Order,
-) -> Result<Vec<T>> {
-    let distribution_query = crate::search::queries::distribution_query(&query, search_fields);
+) -> Result<(usize, HashMap<String, usize>, Vec<T>)> {
     let query_stages = crate::search::queries::parse_query(&query, search_fields);
     let mut result_addresses = vec![];
 
@@ -152,7 +157,45 @@ fn execute_search<T: FromTantivyDoc>(
         loaded.push(T::from_doc(id_field, doc)?);
     }
 
-    Ok(loaded)
+    let (count, dist) = search_aggregate(&query, search_fields, searcher)?;
+
+    Ok((count, dist, loaded))
+}
+
+fn search_aggregate(
+    query: &str,
+    fields: &[Field],
+    searcher: &Searcher,
+) -> Result<(usize, HashMap<String, usize>)> {
+    let distribution_query = crate::search::queries::distribution_query(query, fields);
+
+    let mut terms = TermsAggregation::default();
+    terms.size = Some(u32::MAX);
+
+    let aggs: Aggregations = vec![(
+            "tags".to_string(),
+            Aggregation::Bucket(BucketAggregation {
+                bucket_agg: BucketAggregationType::Terms(terms),
+                sub_aggregation: Aggregations::new(),
+            })
+        )]
+        .into_iter()
+        .collect();
+    let collector = AggregationCollector::from_aggs(aggs);
+
+    let (count, terms) = searcher.search(&distribution_query, &(Count, collector))?;
+
+    let (_, first_agg) = terms.0.into_iter().next().unwrap();
+    let mut distributions = HashMap::new();
+    if let AggregationResult::BucketResult(BucketResult::Terms { buckets, .. }) = first_agg {
+        distributions.extend(
+            buckets
+                .into_iter()
+                .map(|v| (v.key.to_string(), v.doc_count as usize))
+        );
+    }
+
+    Ok((count, distributions))
 }
 
 fn search_docs(
