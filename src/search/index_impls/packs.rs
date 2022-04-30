@@ -93,7 +93,7 @@ impl PackIndex {
         models::packs::refresh_latest_data().await?;
 
         for pack in models::packs::all_packs() {
-            todo!()
+            self.writer.add_document(pack.as_tantivy_doc(&self.schema)).await?;
         }
 
         Ok(())

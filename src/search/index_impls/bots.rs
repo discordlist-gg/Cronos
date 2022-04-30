@@ -94,7 +94,7 @@ impl BotIndex {
         models::bots::refresh_latest_data().await?;
 
         for bot in models::bots::all_bots() {
-            todo!()
+            self.writer.add_document(bot.as_tantivy_doc(&self.schema)).await?;
         }
 
         Ok(())
