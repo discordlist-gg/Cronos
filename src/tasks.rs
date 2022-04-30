@@ -17,7 +17,7 @@ async fn check_votes_loop() {
         }
 
         if let Err(e) = crate::models::packs::refresh_latest_votes().await {
-            error!("Failed to update bot votes due to error: {}", e);
+            error!("Failed to update pack votes due to error: {}", e);
         }
     }
 }
@@ -37,7 +37,7 @@ async fn refresh_live_data_loop() {
         }
 
         if let Err(e) = crate::models::packs::refresh_latest_data().await {
-            error!("Failed to update bot data due to error: {}", e);
+            error!("Failed to update pack data due to error: {}", e);
         }
     }
 }

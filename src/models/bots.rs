@@ -8,8 +8,7 @@ use backend_common::types::{JsSafeBigInt, JsSafeInt, Set, Timestamp};
 use backend_common::FieldNamesAsArray;
 use futures::StreamExt;
 use once_cell::sync::Lazy;
-use poem_openapi::Object;
-use scylla::{FromRow, IntoTypedRows};
+use scylla::FromRow;
 use tantivy::schema::Schema;
 
 use crate::models::connection::session;

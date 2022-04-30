@@ -44,7 +44,7 @@ pub struct BotHit {
     pub permissions: JsSafeBigInt,
 
     /// The bot's associated tags.
-    pub tags: BotTags,
+    pub tags: Vec<String>,
 
     /// The timestamp that the bot was first created on.
     pub created_on: Timestamp,
@@ -62,12 +62,9 @@ pub struct BotHit {
     pub brief_description: String,
 }
 
-impl FromTantivyDoc for BotHit {
-    fn from_doc(id_field: Field, doc: Document) -> Option<Self> {
-        let id = doc.get_first(id_field)?.as_i64()?;
-        let bot = get_bot_data(id)?;
-
-        Some(Self {
+impl From<Bot> for BotHit {
+    fn from(bot: Bot) -> Self {
+        Self {
             id: bot.id,
             username: bot.username,
             avatar: bot.avatar,
@@ -76,13 +73,25 @@ impl FromTantivyDoc for BotHit {
             flags: bot.features,
             features: bot.features,
             permissions: bot.permissions,
-            tags: bot.tags,
+            tags: bot.tags
+                .iter()
+                .map(|v| v.name.to_string())
+                .collect(),
             created_on: bot.created_on,
             owner_id: bot.owner_id,
             co_owner_ids: bot.co_owner_ids,
             guild_count: bot.guild_count,
             brief_description: bot.brief_description,
-        })
+        }
+    }
+}
+
+impl FromTantivyDoc for BotHit {
+    fn from_doc(id_field: Field, doc: Document) -> Option<Self> {
+        let id = doc.get_first(id_field)?.as_i64()?;
+        let bot = get_bot_data(id)?;
+
+        Some(Self::from(bot))
     }
 }
 
@@ -150,7 +159,7 @@ pub struct BotSearchResult {
     nb_hits: usize,
 
     /// The distribution of tags/categories across the results.
-    tag_distribution: HashMap<String, HashMap<String, usize>>,
+    tag_distribution: HashMap<String, usize>,
 }
 
 pub struct BotApi;
@@ -162,17 +171,29 @@ impl BotApi {
         &self,
         payload: Json<BotSearchPayload>,
     ) -> Result<Json<BotSearchResult>> {
+        let limit = payload.0.limit.unwrap_or(20);
+        let offset = payload.0.offset;
+        let query = payload.0.query.clone();
 
         let (num_hits, dist, hits) = readers::bots::reader()
             .search::<BotHit>(
                 payload.0.query,
-                payload.0.limit.unwrap_or(20),
-                payload.0.offset,
+                limit,
+                offset,
                 payload.0.sort_by,
                 payload.0.order,
             )
             .await?;
 
-        todo!()
+        let result = BotSearchResult {
+            hits,
+            limit,
+            offset,
+            query: query.unwrap_or_else(|| "*".to_string()),
+            nb_hits: num_hits,
+            tag_distribution: dist,
+        };
+
+        Ok(Json(result))
     }
 }
