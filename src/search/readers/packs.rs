@@ -25,7 +25,9 @@ pub fn init(
     reader: IndexReader,
     concurrency_limiter: Arc<Semaphore>,
 ) {
-    PACK_READER.get_or_init(|| InnerReader::new(id_field, search_fields, reader, concurrency_limiter));
+    PACK_READER.get_or_init(|| {
+        InnerReader::new(id_field, search_fields, reader, concurrency_limiter)
+    });
 }
 
 #[derive(Enum, Debug, Copy, Clone)]
@@ -111,7 +113,6 @@ impl InnerReader {
         rx.await?
     }
 }
-
 
 #[allow(clippy::too_many_arguments)]
 fn execute_search<T: FromTantivyDoc>(

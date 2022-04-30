@@ -9,14 +9,19 @@ use backend_common::FieldNamesAsArray;
 use futures::StreamExt;
 use once_cell::sync::Lazy;
 use poem_openapi::Object;
-use scylla::FromRow;
+use scylla::{FromRow, IntoTypedRows};
 use tantivy::schema::Schema;
-use scylla::IntoTypedRows;
 
-use crate::{derive_fetch_by_id, derive_fetch_iter};
 use crate::models::connection::session;
 use crate::models::utils::{process_rows, VoteStats};
-use crate::search::index_impls::bots::{ID_FIELD, TAGS_FIELD, DESCRIPTION_FIELD, USERNAME_FIELD, FEATURES_FIELD};
+use crate::search::index_impls::bots::{
+    DESCRIPTION_FIELD,
+    FEATURES_FIELD,
+    ID_FIELD,
+    TAGS_FIELD,
+    USERNAME_FIELD,
+};
+use crate::{derive_fetch_by_id, derive_fetch_iter};
 
 #[derive(Object, FromRow, FieldNamesAsArray, Debug, Clone)]
 #[oai(rename_all = "camelCase")]
@@ -121,7 +126,8 @@ pub async fn refresh_latest_votes() -> Result<()> {
     Ok(())
 }
 
-static LIVE_DATA: Lazy<concread::hashmap::HashMap<i64, Bot>> = Lazy::new(Default::default);
+static LIVE_DATA: Lazy<concread::hashmap::HashMap<i64, Bot>> =
+    Lazy::new(Default::default);
 
 #[inline]
 pub fn bot_data(id: i64) -> Option<Bot> {
@@ -144,16 +150,14 @@ pub fn update_live_data(bot: Bot) {
 }
 
 pub async fn refresh_latest_data() -> Result<()> {
-    let mut iter = Bot::iter_rows()
-        .await?
-        .into_typed::<Bot>();
+    let mut iter = Bot::iter_rows().await?.into_typed::<Bot>();
 
     let mut txn = LIVE_DATA.write();
     txn.clear();
 
     while let Some(Ok(row)) = iter.next().await {
         if row.is_hidden || row.is_forced_into_hiding {
-            continue
+            continue;
         }
 
         txn.insert(*row.id, row);

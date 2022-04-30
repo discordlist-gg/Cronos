@@ -1,12 +1,13 @@
 use std::fs;
 use std::path::Path;
-use tantivy::schema::Schema;
+
 use anyhow::Result;
-use tantivy::{Directory, IndexReader, ReloadPolicy};
 use tantivy::directory::MmapDirectory;
+use tantivy::schema::Schema;
+use tantivy::{Directory, IndexReader, ReloadPolicy};
+
 use crate::search::tokenizer::SimpleUnicodeTokenizer;
 use crate::search::writer::Writer;
-
 
 pub async fn open_or_create(
     path: &Path,
@@ -27,7 +28,8 @@ pub async fn open_or_create(
         .tokenizers()
         .register("default", SimpleUnicodeTokenizer::default());
 
-    let reader = index.reader_builder()
+    let reader = index
+        .reader_builder()
         .reload_policy(ReloadPolicy::OnCommit)
         .num_searchers(num_readers)
         .try_into()?;

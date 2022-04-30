@@ -9,14 +9,18 @@ use backend_common::FieldNamesAsArray;
 use futures::StreamExt;
 use once_cell::sync::Lazy;
 use poem_openapi::Object;
-use scylla::FromRow;
-use scylla::IntoTypedRows;
+use scylla::{FromRow, IntoTypedRows};
 use tantivy::schema::Schema;
 
-use crate::{derive_fetch_by_id, derive_fetch_iter};
 use crate::models::connection::session;
 use crate::models::utils::{process_rows, VoteStats};
-use crate::search::index_impls::packs::{DESCRIPTION_FIELD, ID_FIELD, NAME_FIELD, TAG_FIELD};
+use crate::search::index_impls::packs::{
+    DESCRIPTION_FIELD,
+    ID_FIELD,
+    NAME_FIELD,
+    TAG_FIELD,
+};
+use crate::{derive_fetch_by_id, derive_fetch_iter};
 
 #[derive(Object, FromRow, FieldNamesAsArray, Debug, Clone)]
 #[oai(rename_all = "camelCase")]
@@ -97,7 +101,8 @@ pub async fn refresh_latest_votes() -> Result<()> {
     Ok(())
 }
 
-static LIVE_DATA: Lazy<concread::hashmap::HashMap<i64, Pack>> = Lazy::new(Default::default);
+static LIVE_DATA: Lazy<concread::hashmap::HashMap<i64, Pack>> =
+    Lazy::new(Default::default);
 
 #[inline]
 pub fn pack_data(id: i64) -> Option<Pack> {
@@ -120,9 +125,7 @@ pub fn update_live_data(pack: Pack) {
 }
 
 pub async fn refresh_latest_data() -> Result<()> {
-    let mut iter = Pack::iter_rows()
-        .await?
-        .into_typed::<Pack>();
+    let mut iter = Pack::iter_rows().await?.into_typed::<Pack>();
 
     let mut txn = LIVE_DATA.write();
     txn.clear();

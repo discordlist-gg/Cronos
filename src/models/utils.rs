@@ -37,7 +37,8 @@ macro_rules! derive_fetch_by_id {
 macro_rules! derive_fetch_iter {
     ($slf:ident, table = $tbl:expr) => {
         impl $slf {
-            pub async fn iter_rows() -> Result<scylla::transport::iterator::RowIterator> {
+            pub async fn iter_rows() -> Result<scylla::transport::iterator::RowIterator>
+            {
                 use super::connection::session;
 
                 let qry = format!(

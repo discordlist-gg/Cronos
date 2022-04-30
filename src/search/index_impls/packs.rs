@@ -1,15 +1,16 @@
 use std::path::Path;
 use std::sync::Arc;
+
 use anyhow::{anyhow, Result};
-use tantivy::schema::{FAST, Field, INDEXED, Schema, SchemaBuilder, STORED, TEXT};
-use tantivy::Term;
 use once_cell::sync::OnceCell;
+use tantivy::schema::{Field, Schema, SchemaBuilder, FAST, INDEXED, STORED, TEXT};
+use tantivy::Term;
 use tokio::sync::Semaphore;
 
-use crate::models::packs::{Pack, remove_pack_from_live, update_live_data};
-use crate::search::writer::Writer;
+use crate::models::packs::{remove_pack_from_live, update_live_data, Pack};
 use crate::search::index;
 use crate::search::readers::packs;
+use crate::search::writer::Writer;
 
 pub static ID_FIELD: &str = "id";
 pub static NAME_FIELD: &str = "name";
@@ -18,7 +19,11 @@ pub static TAG_FIELD: &str = "tag";
 
 static PACK_INDEX: OnceCell<PackIndex> = OnceCell::new();
 
-pub async fn init_index(path: &Path, limiter: Arc<Semaphore>, max_concurrency: usize) -> Result<()> {
+pub async fn init_index(
+    path: &Path,
+    limiter: Arc<Semaphore>,
+    max_concurrency: usize,
+) -> Result<()> {
     let index = PackIndex::create(path, limiter, max_concurrency).await?;
     let _ = PACK_INDEX.set(index);
 
@@ -36,12 +41,13 @@ pub struct PackIndex {
 }
 
 impl PackIndex {
-    pub async fn create(path: &Path, limiter: Arc<Semaphore>, max_concurrency: usize) -> Result<Self> {
-        let (
-            reader,
-            schema,
-            writer,
-        ) = index::open_or_create(path,default_schema(), max_concurrency).await?;
+    pub async fn create(
+        path: &Path,
+        limiter: Arc<Semaphore>,
+        max_concurrency: usize,
+    ) -> Result<Self> {
+        let (reader, schema, writer) =
+            index::open_or_create(path, default_schema(), max_concurrency).await?;
 
         let id_field = schema.get_field(ID_FIELD).unwrap();
         let search_fields = vec![
@@ -52,7 +58,11 @@ impl PackIndex {
 
         packs::init(id_field, search_fields, reader, limiter);
 
-        Ok(Self { id_field, writer, schema })
+        Ok(Self {
+            id_field,
+            writer,
+            schema,
+        })
     }
 
     pub async fn remove_pack(&self, pack_id: i64) -> Result<()> {
@@ -78,7 +88,6 @@ impl PackIndex {
     }
 }
 
-
 fn default_schema() -> Schema {
     let mut builder = SchemaBuilder::new();
 
@@ -89,4 +98,3 @@ fn default_schema() -> Schema {
 
     builder.build()
 }
-

@@ -1,10 +1,11 @@
 use std::thread;
+use std::thread::JoinHandle;
 use std::time::Duration;
-use flume::RecvTimeoutError;
+
 use anyhow::{anyhow, Result};
+use flume::RecvTimeoutError;
 use tantivy::{Document, Index, IndexWriter, Term};
 use tokio::sync::oneshot;
-use std::thread::JoinHandle;
 
 const MEMORY_ARENA: usize = 300 << 20;
 const AUTO_COMMIT_SECS: u64 = 15;
@@ -15,9 +16,7 @@ pub async fn start_writer(index: Index) -> Result<Writer> {
 
     let (waker, ack) = oneshot::channel();
     if (tx.send_async(WriterOp::__Ping(waker)).await).is_err() {
-        handle
-            .join()
-            .expect("Join correctly")?;
+        handle.join().expect("Join correctly")?;
 
         // Should never happen theoretically as our rx will only be
         // dropped if the thread died unexpectedly.
@@ -25,19 +24,14 @@ pub async fn start_writer(index: Index) -> Result<Writer> {
     };
 
     if (ack.await).is_err() {
-        handle
-            .join()
-            .expect("Join correctly")?;
+        handle.join().expect("Join correctly")?;
 
         // Should never happen theoretically as our rx will only be
         // dropped if the thread died unexpectedly.
         return Err(anyhow!("Failed to start writer due to unknown error."));
     };
 
-    Ok(Writer {
-        tx,
-        handle,
-    })
+    Ok(Writer { tx, handle })
 }
 
 pub struct Writer {
@@ -127,7 +121,7 @@ fn handle_message(op: WriterOp, writer: &mut IndexWriter) -> anyhow::Result<()> 
         WriterOp::RemoveDocuments(term) => {
             writer.delete_term(term);
         },
-        WriterOp::ClearAll  => {
+        WriterOp::ClearAll => {
             writer.delete_all_documents()?;
         },
     };

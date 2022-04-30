@@ -93,13 +93,15 @@ async fn main() -> Result<()> {
             &base_path.join("bots"),
             limiter.clone(),
             args.max_concurrency,
-        ).await?;
+        )
+        .await?;
 
         search::index_impls::packs::init_index(
             &base_path.join("packs"),
             limiter.clone(),
             args.max_concurrency,
-        ).await?;
+        )
+        .await?;
     }
 
     let api_service = OpenApiService::new(

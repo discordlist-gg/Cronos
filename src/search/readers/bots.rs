@@ -5,14 +5,19 @@ use std::sync::Arc;
 use anyhow::Result;
 use once_cell::sync::OnceCell;
 use poem_openapi::Enum;
+use tantivy::aggregation::agg_req::{
+    Aggregation,
+    Aggregations,
+    BucketAggregation,
+    BucketAggregationType,
+};
+use tantivy::aggregation::agg_result::{AggregationResult, BucketResult};
+use tantivy::aggregation::bucket::TermsAggregation;
+use tantivy::aggregation::AggregationCollector;
 use tantivy::collector::{Count, TopDocs};
 use tantivy::query::Query;
 use tantivy::schema::Field;
 use tantivy::{DocAddress, IndexReader, Searcher};
-use tantivy::aggregation::agg_req::{Aggregation, Aggregations, BucketAggregation, BucketAggregationType};
-use tantivy::aggregation::agg_result::{AggregationResult, BucketResult};
-use tantivy::aggregation::AggregationCollector;
-use tantivy::aggregation::bucket::TermsAggregation;
 use tokio::sync::{oneshot, Semaphore};
 
 use crate::models::bots;
@@ -31,7 +36,9 @@ pub fn init(
     reader: IndexReader,
     concurrency_limiter: Arc<Semaphore>,
 ) {
-    BOT_READER.get_or_init(|| InnerReader::new(id_field, search_fields, reader, concurrency_limiter));
+    BOT_READER.get_or_init(|| {
+        InnerReader::new(id_field, search_fields, reader, concurrency_limiter)
+    });
 }
 
 #[derive(Enum, Debug, Copy, Clone)]
@@ -118,7 +125,6 @@ impl InnerReader {
     }
 }
 
-
 #[allow(clippy::too_many_arguments)]
 fn execute_search<T: FromTantivyDoc>(
     id_field: Field,
@@ -173,25 +179,27 @@ fn search_aggregate(
     terms.size = Some(u32::MAX);
 
     let aggs: Aggregations = vec![(
-            "tags".to_string(),
-            Aggregation::Bucket(BucketAggregation {
-                bucket_agg: BucketAggregationType::Terms(terms),
-                sub_aggregation: Aggregations::new(),
-            })
-        )]
-        .into_iter()
-        .collect();
+        "tags".to_string(),
+        Aggregation::Bucket(BucketAggregation {
+            bucket_agg: BucketAggregationType::Terms(terms),
+            sub_aggregation: Aggregations::new(),
+        }),
+    )]
+    .into_iter()
+    .collect();
     let collector = AggregationCollector::from_aggs(aggs);
 
     let (count, terms) = searcher.search(&distribution_query, &(Count, collector))?;
 
     let (_, first_agg) = terms.0.into_iter().next().unwrap();
     let mut distributions = HashMap::new();
-    if let AggregationResult::BucketResult(BucketResult::Terms { buckets, .. }) = first_agg {
+    if let AggregationResult::BucketResult(BucketResult::Terms { buckets, .. }) =
+        first_agg
+    {
         distributions.extend(
             buckets
                 .into_iter()
-                .map(|v| (v.key.to_string(), v.doc_count as usize))
+                .map(|v| (v.key.to_string(), v.doc_count as usize)),
         );
     }
 

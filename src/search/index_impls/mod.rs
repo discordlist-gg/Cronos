@@ -1,2 +1,2 @@
-pub mod packs;
 pub mod bots;
+pub mod packs;

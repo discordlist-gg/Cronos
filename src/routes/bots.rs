@@ -1,7 +1,8 @@
 use std::collections::HashMap;
-use poem_openapi::{OpenApi, Object, ApiResponse};
-use poem_openapi::payload::Json;
+
 use poem::Result;
+use poem_openapi::payload::Json;
+use poem_openapi::{ApiResponse, Object, OpenApi};
 
 use crate::models::bots::Bot;
 
@@ -16,11 +17,11 @@ pub struct BotSearchPayload {
     /// How many documents to return.
     ///
     /// Defaults to 20 results.
-    #[oai(validator(minimum(value="1"), maximum(value="50")))]
+    #[oai(validator(minimum(value = "1"), maximum(value = "50")))]
     limit: Option<usize>,
 
     /// How many documents to skip first.
-    #[oai(validator(maximum(value="40000")), default)]
+    #[oai(validator(maximum(value = "40000")), default)]
     offset: usize,
 
     /// A set of filter rules.
@@ -60,7 +61,7 @@ pub struct BotSearchResult {
     nb_hits: usize,
 
     /// The distribution of tags/categories across the results.
-    tag_distribution: HashMap<String, HashMap<String, usize>>
+    tag_distribution: HashMap<String, HashMap<String, usize>>,
 }
 
 pub struct BotApi;
@@ -68,7 +69,10 @@ pub struct BotApi;
 #[OpenApi]
 impl BotApi {
     #[oai(path = "/bots/search", method = "post")]
-    pub async fn search(&self, payload: Json<BotSearchPayload>) -> Result<Json<BotSearchResult>> {
+    pub async fn search(
+        &self,
+        payload: Json<BotSearchPayload>,
+    ) -> Result<Json<BotSearchResult>> {
         todo!()
     }
 }
