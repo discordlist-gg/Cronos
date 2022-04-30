@@ -1,4 +1,4 @@
-use tantivy::schema::{Field, Schema};
+use tantivy::schema::Field;
 use tantivy::Document;
 
 mod index;

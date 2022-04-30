@@ -1,7 +1,7 @@
 use std::path::Path;
 use std::sync::Arc;
 use anyhow::{anyhow, Result};
-use tantivy::schema::{FAST, Field, INDEXED, Schema, SchemaBuilder, TEXT};
+use tantivy::schema::{FAST, Field, INDEXED, Schema, SchemaBuilder, STORED, TEXT};
 use tantivy::Term;
 use once_cell::sync::OnceCell;
 use tokio::sync::Semaphore;
