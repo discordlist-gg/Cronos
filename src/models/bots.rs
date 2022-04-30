@@ -9,10 +9,12 @@ use backend_common::FieldNamesAsArray;
 use once_cell::sync::Lazy;
 use poem_openapi::Object;
 use scylla::FromRow;
+use tantivy::schema::Schema;
 
 use crate::derive_fetch_by_id;
 use crate::models::connection::session;
 use crate::models::utils::{process_rows, VoteStats};
+use crate::search::index_impls::bots::{ID_FIELD, TAGS_FIELD, DESCRIPTION_FIELD, USERNAME_FIELD, FEATURES_FIELD, CATEGORIES_FIELD};
 
 #[derive(Object, FromRow, FieldNamesAsArray, Debug, Clone)]
 #[oai(rename_all = "camelCase")]
@@ -74,6 +76,31 @@ pub struct Bot {
     pub brief_description: String,
 }
 derive_fetch_by_id!(Bot, table = "bots");
+
+impl Bot {
+    pub fn as_tantivy_doc(&self, schema: &Schema) -> tantivy::Document {
+        let mut document = tantivy::Document::new();
+
+        let id_field = schema.get_field(ID_FIELD).unwrap();
+        let username_field = schema.get_field(USERNAME_FIELD).unwrap();
+        let description_field = schema.get_field(DESCRIPTION_FIELD).unwrap();
+        let features_field = schema.get_field(FEATURES_FIELD).unwrap();
+        let tags_field = schema.get_field(TAGS_FIELD).unwrap();
+        let categories_field = schema.get_field(CATEGORIES_FIELD).unwrap();
+
+        document.add_i64(id_field, *self.id);
+        document.add_text(username_field, &self.username);
+        document.add_text(description_field, &self.brief_description);
+        document.add_u64(features_field, *self.features as u64);
+
+        for tag in self.tags.iter() {
+            document.add_text(categories_field, &tag.category);
+            document.add_text(tags_field, &tag.name);
+        }
+
+        document
+    }
+}
 
 static VOTE_INFO: Lazy<ArcSwap<HashMap<i64, VoteStats>>> =
     Lazy::new(|| ArcSwap::from_pointee(HashMap::new()));

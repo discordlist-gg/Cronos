@@ -14,7 +14,7 @@ pub async fn start_writer(index: Index) -> Result<Writer> {
     let handle = thread::spawn(move || run_writer(index, rx));
 
     let (waker, ack) = oneshot::channel();
-    if let Err(_) = tx.send_async(WriterOp::__Ping(waker)).await {
+    if (tx.send_async(WriterOp::__Ping(waker)).await).is_err() {
         handle
             .join()
             .expect("Join correctly")?;
@@ -24,7 +24,7 @@ pub async fn start_writer(index: Index) -> Result<Writer> {
         return Err(anyhow!("Failed to start writer due to unknown error."));
     };
 
-    if let Err(_) = ack.await {
+    if (ack.await).is_err() {
         handle
             .join()
             .expect("Join correctly")?;
@@ -45,8 +45,29 @@ pub struct Writer {
     handle: JoinHandle<Result<()>>,
 }
 
-pub enum WriterOp {
-    AddDocuments(Vec<Document>),
+impl Writer {
+    async fn send_op(&self, op: WriterOp) -> Result<()> {
+        self.tx
+            .send_async(op)
+            .await
+            .map_err(|_| anyhow!("Writer actor has shutdown."))
+    }
+
+    pub async fn add_documents(&self, doc: Document) -> Result<()> {
+        self.send_op(WriterOp::AddDocument(doc)).await
+    }
+
+    pub async fn remove_docs(&self, term: Term) -> Result<()> {
+        self.send_op(WriterOp::RemoveDocuments(term)).await
+    }
+
+    pub async fn clear_all_docs(&self) -> Result<()> {
+        self.send_op(WriterOp::ClearAll).await
+    }
+}
+
+enum WriterOp {
+    AddDocument(Document),
     RemoveDocuments(Term),
     ClearAll,
 
@@ -100,10 +121,8 @@ fn handle_message(op: WriterOp, writer: &mut IndexWriter) -> anyhow::Result<()> 
         WriterOp::__Ping(waker) => {
             let _ = waker.send(());
         },
-        WriterOp::AddDocuments(docs) => {
-            for doc in docs {
-                writer.add_document(doc)?;
-            }
+        WriterOp::AddDocument(doc) => {
+            writer.add_document(doc)?;
         },
         WriterOp::RemoveDocuments(term) => {
             writer.delete_term(term);
