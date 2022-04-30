@@ -1,7 +1,7 @@
-use std::ops::Deref;
 use std::sync::Arc;
 
 use anyhow::Result;
+use once_cell::sync::OnceCell;
 use poem_openapi::Enum;
 use tantivy::collector::TopDocs;
 use tantivy::query::Query;
@@ -12,6 +12,21 @@ use tokio::sync::{oneshot, Semaphore};
 use crate::models::packs;
 use crate::search::readers::Order;
 use crate::search::FromTantivyDoc;
+
+static PACK_READER: OnceCell<InnerReader> = OnceCell::new();
+
+pub fn reader() -> &'static InnerReader {
+    PACK_READER.get().unwrap()
+}
+
+pub fn init(
+    id_field: Field,
+    search_fields: Vec<Field>,
+    reader: IndexReader,
+    concurrency_limiter: Arc<Semaphore>,
+) {
+    PACK_READER.get_or_init(|| InnerReader::new(id_field, search_fields, reader, concurrency_limiter));
+}
 
 #[derive(Enum, Debug, Copy, Clone)]
 pub enum PacksSortBy {
@@ -34,18 +49,6 @@ pub enum PacksSortBy {
 impl Default for PacksSortBy {
     fn default() -> Self {
         Self::Relevance
-    }
-}
-
-
-#[derive(Clone)]
-pub struct BotsReader(Arc<InnerReader>);
-
-impl Deref for BotsReader {
-    type Target = InnerReader;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
     }
 }
 
