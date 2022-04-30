@@ -244,22 +244,34 @@ async fn log<E: Endpoint>(next: E, req: Request) -> poem::Result<Response> {
     let res = next.call(req).await;
     let elapsed = start.elapsed();
 
-    let resp = match res {
+    let mut resp = match res {
         Ok(r) => r.into_response(),
-        Err(e) => {
-            error!("Unhandled error: {}", e);
-            e.into_response()
-        },
+        Err(e) => e.into_response(),
     };
 
-    info!(
-        "{} -> {} {} [ {:?} ] - {:?}",
-        method.as_str(),
-        resp.status().as_u16(),
-        resp.status().canonical_reason().unwrap_or(""),
-        elapsed,
-        path.path(),
-    );
+    if resp.status().as_u16() >= 500 {
+        let body = resp.take_body();
+        error!(
+            "{} -> {} {} [ {:?} ] - {:?}",
+            method.as_str(),
+            resp.status().as_u16(),
+            resp.status().canonical_reason().unwrap_or(""),
+            elapsed,
+            path.path(),
+        );
+        error!("^^^ Continued from above -> {:?}", body.into_bytes().await.ok());
+
+        resp.set_body("An internal server error has occurred.");
+    } else {
+        info!(
+            "{} -> {} {} [ {:?} ] - {:?}",
+            method.as_str(),
+            resp.status().as_u16(),
+            resp.status().canonical_reason().unwrap_or(""),
+            elapsed,
+            path.path(),
+        );
+    }
 
     Ok(resp)
 }
