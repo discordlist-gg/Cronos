@@ -158,7 +158,7 @@ impl PackApi {
         Ok(StandardResponse::Ok)
     }
 
-    #[oai(path = "/packs", method = "put")]
+    #[oai(path = "/packs/refresh", method = "post")]
     pub async fn refresh_packs(&self) -> Result<StandardResponse> {
         index_impls::packs::writer()
             .full_refresh()

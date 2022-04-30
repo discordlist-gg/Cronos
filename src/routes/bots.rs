@@ -183,7 +183,7 @@ impl BotApi {
         Ok(StandardResponse::Ok)
     }
 
-    #[oai(path = "/bots", method = "put")]
+    #[oai(path = "/bots/refresh", method = "post")]
     pub async fn refresh_bots(&self) -> Result<StandardResponse> {
         index_impls::bots::writer()
             .full_refresh()
