@@ -9,7 +9,7 @@ use backend_common::FieldNamesAsArray;
 use futures::StreamExt;
 use once_cell::sync::Lazy;
 use poem_openapi::Object;
-use scylla::{FromRow, IntoTypedRows};
+use scylla::FromRow;
 use tantivy::schema::Schema;
 
 use crate::models::connection::session;
@@ -93,7 +93,7 @@ pub fn vote_stats(id: i64) -> VoteStats {
 
 pub async fn refresh_latest_votes() -> Result<()> {
     let iter = session()
-        .query_iter("SELECT id, votes, all_time_votes FROM pack_votes;", &[])
+        .query_iter("SELECT id, votes FROM pack_votes;", &[])
         .await?;
 
     VOTE_INFO.store(Arc::new(process_rows(iter).await));
@@ -106,7 +106,7 @@ static LIVE_DATA: Lazy<concread::hashmap::HashMap<i64, Pack>> =
 
 #[inline]
 pub fn get_pack_data(id: i64) -> Option<Pack> {
-    let mut txn = LIVE_DATA.read();
+    let txn = LIVE_DATA.read();
     txn.get(&id).cloned()
 }
 
@@ -140,8 +140,7 @@ pub async fn refresh_latest_data() -> Result<()> {
 
 #[inline]
 pub fn get_pack_likes(pack_id: i64) -> u64 {
-    let guard = VOTE_INFO.load();
-    guard.get(&pack_id).map(|v| v.votes()).unwrap_or_default()
+    vote_stats(pack_id).votes()
 }
 
 #[inline]

@@ -116,7 +116,7 @@ pub fn vote_stats(id: i64) -> VoteStats {
 
 pub async fn refresh_latest_votes() -> Result<()> {
     let iter = session()
-        .query_iter("SELECT id, votes, all_time_votes FROM bot_votes;", &[])
+        .query_iter("SELECT id, votes FROM bot_votes;", &[])
         .await?;
 
     VOTE_INFO.store(Arc::new(process_rows(iter).await));
@@ -129,7 +129,7 @@ static LIVE_DATA: Lazy<concread::hashmap::HashMap<i64, Bot>> =
 
 #[inline]
 pub fn get_bot_data(id: i64) -> Option<Bot> {
-    let mut txn = LIVE_DATA.read();
+    let txn = LIVE_DATA.read();
     txn.get(&id).cloned()
 }
 
@@ -167,8 +167,7 @@ pub async fn refresh_latest_data() -> Result<()> {
 
 #[inline]
 pub fn get_bot_votes(bot_id: i64) -> u64 {
-    let guard = VOTE_INFO.load();
-    guard.get(&bot_id).map(|v| v.votes()).unwrap_or_default()
+    vote_stats(bot_id).votes()
 }
 
 #[inline]

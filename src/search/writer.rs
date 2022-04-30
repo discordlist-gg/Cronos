@@ -1,5 +1,4 @@
 use std::thread;
-use std::thread::JoinHandle;
 use std::time::Duration;
 
 use anyhow::{anyhow, Result};
@@ -31,12 +30,11 @@ pub async fn start_writer(index: Index) -> Result<Writer> {
         return Err(anyhow!("Failed to start writer due to unknown error."));
     };
 
-    Ok(Writer { tx, handle })
+    Ok(Writer { tx })
 }
 
 pub struct Writer {
     tx: flume::Sender<WriterOp>,
-    handle: JoinHandle<Result<()>>,
 }
 
 impl Writer {

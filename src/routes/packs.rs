@@ -1,19 +1,20 @@
 use std::collections::HashMap;
 
-use backend_common::tags::{BotTags, PackTags};
-use backend_common::types::{JsSafeBigInt, JsSafeInt, Set, Timestamp};
+use backend_common::types::{JsSafeBigInt, Set, Timestamp};
 use poem::Result;
 use poem_openapi::payload::Json;
 use poem_openapi::{Object, OpenApi};
+use poem_openapi::param::Path;
 use tantivy::schema::Field;
 use tantivy::Document;
 
 use crate::models::bots::get_bot_data;
 use crate::models::packs::get_pack_data;
 use crate::routes::bots::BotHit;
+use crate::routes::StandardResponse;
 use crate::search::readers::packs::PacksSortBy;
 use crate::search::readers::Order;
-use crate::search::{readers, FromTantivyDoc};
+use crate::search::{readers, FromTantivyDoc, index_impls};
 
 #[derive(Debug, Object)]
 #[oai(rename_all = "camelCase")]
@@ -134,10 +135,29 @@ pub struct PackSearchResult {
     tag_distribution: HashMap<String, usize>,
 }
 
+
 pub struct PackApi;
 
 #[OpenApi]
 impl PackApi {
+    #[oai(path = "/packs/:id", method = "post")]
+    pub async fn update_pack(&self, id: Path<u64>) -> Result<StandardResponse> {
+        index_impls::packs::writer()
+            .upsert_pack(*id as i64)
+            .await?;
+
+        Ok(StandardResponse::Ok)
+    }
+
+    #[oai(path = "/packs/:id", method = "delete")]
+    pub async fn remove_pack(&self, id: Path<u64>) -> Result<StandardResponse> {
+        index_impls::packs::writer()
+            .remove_pack(*id as i64)
+            .await?;
+
+        Ok(StandardResponse::Ok)
+    }
+
     #[oai(path = "/packs/search", method = "post")]
     pub async fn search(
         &self,
