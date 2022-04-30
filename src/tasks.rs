@@ -23,7 +23,7 @@ async fn check_votes_loop() {
 }
 
 pub fn start_live_data_tasks() {
-    tokio::task::spawn_local(refresh_live_data_loop());
+    tokio::spawn(refresh_live_data_loop());
 }
 
 async fn refresh_live_data_loop() {

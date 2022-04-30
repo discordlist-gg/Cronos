@@ -160,7 +160,6 @@ pub struct BotSearchResult {
 }
 
 
-
 pub struct BotApi;
 
 #[OpenApi]
