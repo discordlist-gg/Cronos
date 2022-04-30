@@ -85,7 +85,7 @@ impl BotIndex {
 fn default_schema() -> Schema {
     let mut builder = SchemaBuilder::new();
 
-    builder.add_i64_field(ID_FIELD, INDEXED | FAST);
+    builder.add_i64_field(ID_FIELD, INDEXED | FAST | STORED);
     builder.add_u64_field(FEATURES_FIELD, INDEXED | FAST);
     builder.add_text_field(USERNAME_FIELD, TEXT);
     builder.add_text_field(DESCRIPTION_FIELD, TEXT);

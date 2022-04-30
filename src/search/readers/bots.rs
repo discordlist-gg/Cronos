@@ -145,11 +145,10 @@ fn execute_search<T: FromTantivyDoc>(
 
     let docs = result_addresses.into_iter().skip(offset);
 
-    let schema = searcher.schema();
     let mut loaded = vec![];
     for doc in docs {
         let doc = searcher.doc(doc)?;
-        loaded.push(T::from_doc(schema, doc)?);
+        loaded.push(T::from_doc(id_field, doc)?);
     }
 
     Ok(loaded)
