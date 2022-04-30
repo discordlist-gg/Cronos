@@ -123,13 +123,14 @@ pub async fn refresh_latest_votes() -> Result<()> {
     Ok(())
 }
 
-static LIVE_DATA: Lazy<concread::hashmap::HashMap<i64, Bot>> = Lazy::new(|| Default::default());
+static LIVE_DATA: Lazy<concread::hashmap::HashMap<i64, Bot>> = Lazy::new(Default::default);
 
 #[inline]
 pub fn bot_data(id: i64) -> Option<Bot> {
     let mut txn = LIVE_DATA.read();
     txn.get(&id).cloned()
 }
+
 #[inline]
 pub fn remove_bot_from_live(bot_id: i64) {
     let mut txn = LIVE_DATA.write();

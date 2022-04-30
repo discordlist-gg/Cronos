@@ -2,6 +2,8 @@
 extern crate tracing;
 
 use std::num::NonZeroU32;
+use std::path::Path;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use anyhow::Result;
@@ -15,6 +17,7 @@ use poem::listener::TcpListener;
 use poem::middleware::Cors;
 use poem::{Endpoint, EndpointExt, IntoResponse, Request, Response, Route, Server};
 use poem_openapi::{OpenApiService, Tags};
+use tokio::sync::Semaphore;
 use tracing_subscriber::filter::LevelFilter;
 
 pub(crate) mod models;
@@ -53,6 +56,12 @@ pub struct Config {
 
     #[clap(long)]
     init_tables: bool,
+
+    #[clap(long, env)]
+    data_path: String,
+
+    #[clap(long, env, default_value_t = 50)]
+    max_concurrency: usize,
 }
 
 #[tokio::main]
@@ -68,12 +77,29 @@ async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
     {
-        let nodes = args.cluster_nodes.split(";").collect::<Vec<&str>>();
+        let nodes = args.cluster_nodes.split(';').collect::<Vec<&str>>();
 
         models::connection::connect(&nodes, args.init_tables).await?;
     }
 
     tasks::start_vote_update_tasks();
+    tasks::start_live_data_tasks();
+
+    {
+        let limiter = Arc::new(Semaphore::new(args.max_concurrency));
+        let base_path = Path::new(&args.data_path);
+        search::index_impls::bots::init_index(
+            &base_path.join("bots"),
+            limiter.clone(),
+            args.max_concurrency,
+        ).await?;
+
+        search::index_impls::packs::init_index(
+            &base_path.join("packs"),
+            limiter.clone(),
+            args.max_concurrency,
+        ).await?;
+    }
 
     let api_service = OpenApiService::new(
         (routes::bots::BotApi, routes::packs::PackApi),

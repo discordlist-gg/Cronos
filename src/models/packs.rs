@@ -11,10 +11,12 @@ use once_cell::sync::Lazy;
 use poem_openapi::Object;
 use scylla::FromRow;
 use scylla::IntoTypedRows;
+use tantivy::schema::Schema;
 
 use crate::{derive_fetch_by_id, derive_fetch_iter};
 use crate::models::connection::session;
 use crate::models::utils::{process_rows, VoteStats};
+use crate::search::index_impls::packs::{DESCRIPTION_FIELD, ID_FIELD, NAME_FIELD, TAG_FIELD};
 
 #[derive(Object, FromRow, FieldNamesAsArray, Debug, Clone)]
 #[oai(rename_all = "camelCase")]
@@ -56,6 +58,27 @@ pub struct Pack {
 derive_fetch_by_id!(Pack, table = "packs");
 derive_fetch_iter!(Pack, table = "packs");
 
+impl Pack {
+    pub fn as_tantivy_doc(&self, schema: &Schema) -> tantivy::Document {
+        let mut document = tantivy::Document::new();
+
+        let id_field = schema.get_field(ID_FIELD).unwrap();
+        let name_field = schema.get_field(NAME_FIELD).unwrap();
+        let description_field = schema.get_field(DESCRIPTION_FIELD).unwrap();
+        let tag_field = schema.get_field(TAG_FIELD).unwrap();
+
+        document.add_i64(id_field, *self.id);
+        document.add_text(name_field, &self.name);
+        document.add_text(description_field, &self.description);
+
+        if let Some(tag) = self.tag.iter().next() {
+            document.add_text(tag_field, &tag.name);
+        }
+
+        document
+    }
+}
+
 static VOTE_INFO: Lazy<ArcSwap<HashMap<i64, VoteStats>>> =
     Lazy::new(|| ArcSwap::from_pointee(HashMap::new()));
 
@@ -74,7 +97,7 @@ pub async fn refresh_latest_votes() -> Result<()> {
     Ok(())
 }
 
-static LIVE_DATA: Lazy<concread::hashmap::HashMap<i64, Pack>> = Lazy::new(|| Default::default());
+static LIVE_DATA: Lazy<concread::hashmap::HashMap<i64, Pack>> = Lazy::new(Default::default);
 
 #[inline]
 pub fn pack_data(id: i64) -> Option<Pack> {
@@ -83,7 +106,14 @@ pub fn pack_data(id: i64) -> Option<Pack> {
 }
 
 #[inline]
-pub fn update_live_data(pack: Pack) {    
+pub fn remove_pack_from_live(pack_id: i64) {
+    let mut txn = LIVE_DATA.write();
+    txn.remove(&pack_id);
+    txn.commit();
+}
+
+#[inline]
+pub fn update_live_data(pack: Pack) {
     let mut txn = LIVE_DATA.write();
     txn.insert(*pack.id, pack);
     txn.commit();
