@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use backend_common::types::{JsSafeBigInt, JsSafeInt, Set, Timestamp};
 use poem::Result;
+use poem_openapi::param::Path;
 use poem_openapi::payload::Json;
 use poem_openapi::{Object, OpenApi};
-use poem_openapi::param::Path;
 use tantivy::schema::Field;
 use tantivy::Document;
 
@@ -12,7 +12,7 @@ use crate::models::bots::{get_bot_data, Bot};
 use crate::routes::StandardResponse;
 use crate::search::readers::bots::BotsSortBy;
 use crate::search::readers::Order;
-use crate::search::{readers, FromTantivyDoc, index_impls};
+use crate::search::{index_impls, readers, FromTantivyDoc};
 
 #[derive(Debug, Object)]
 #[oai(rename_all = "camelCase")]
@@ -159,7 +159,6 @@ pub struct BotSearchResult {
     tag_distribution: HashMap<String, usize>,
 }
 
-
 pub struct BotApi;
 
 #[OpenApi]
@@ -169,9 +168,7 @@ impl BotApi {
     /// This internally pulls data from the database.
     #[oai(path = "/bots/:id", method = "post", tag = "crate::ApiTags::Bots")]
     pub async fn update_bot(&self, id: Path<u64>) -> Result<StandardResponse> {
-        index_impls::bots::writer()
-            .upsert_bot(*id as i64)
-            .await?;
+        index_impls::bots::writer().upsert_bot(*id as i64).await?;
 
         Ok(StandardResponse::Ok)
     }
@@ -179,9 +176,7 @@ impl BotApi {
     /// Remove Bot Data
     #[oai(path = "/bots/:id", method = "delete", tag = "crate::ApiTags::Bots")]
     pub async fn remove_bot(&self, id: Path<u64>) -> Result<StandardResponse> {
-        index_impls::bots::writer()
-            .remove_bot(*id as i64)
-            .await?;
+        index_impls::bots::writer().remove_bot(*id as i64).await?;
 
         Ok(StandardResponse::Ok)
     }
@@ -189,9 +184,7 @@ impl BotApi {
     /// Refresh Bot Data
     #[oai(path = "/bots/refresh", method = "post", tag = "crate::ApiTags::Bots")]
     pub async fn refresh_bots(&self) -> Result<StandardResponse> {
-        index_impls::bots::writer()
-            .full_refresh()
-            .await?;
+        index_impls::bots::writer().full_refresh().await?;
 
         Ok(StandardResponse::Ok)
     }

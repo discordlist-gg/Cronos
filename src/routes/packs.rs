@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use backend_common::types::{JsSafeBigInt, Set, Timestamp};
 use poem::Result;
+use poem_openapi::param::Path;
 use poem_openapi::payload::Json;
 use poem_openapi::{Object, OpenApi};
-use poem_openapi::param::Path;
 use tantivy::schema::Field;
 use tantivy::Document;
 
@@ -14,7 +14,7 @@ use crate::routes::bots::BotHit;
 use crate::routes::StandardResponse;
 use crate::search::readers::packs::PacksSortBy;
 use crate::search::readers::Order;
-use crate::search::{readers, FromTantivyDoc, index_impls};
+use crate::search::{index_impls, readers, FromTantivyDoc};
 
 #[derive(Debug, Object)]
 #[oai(rename_all = "camelCase")]
@@ -135,7 +135,6 @@ pub struct PackSearchResult {
     tag_distribution: HashMap<String, usize>,
 }
 
-
 pub struct PackApi;
 
 #[OpenApi]
@@ -145,9 +144,7 @@ impl PackApi {
     /// This internally pulls data from the database.
     #[oai(path = "/packs/:id", method = "post", tag = "crate::ApiTags::Packs")]
     pub async fn update_pack(&self, id: Path<u64>) -> Result<StandardResponse> {
-        index_impls::packs::writer()
-            .upsert_pack(*id as i64)
-            .await?;
+        index_impls::packs::writer().upsert_pack(*id as i64).await?;
 
         Ok(StandardResponse::Ok)
     }
@@ -155,19 +152,19 @@ impl PackApi {
     /// Remove Pack Data
     #[oai(path = "/packs/:id", method = "delete", tag = "crate::ApiTags::Packs")]
     pub async fn remove_pack(&self, id: Path<u64>) -> Result<StandardResponse> {
-        index_impls::packs::writer()
-            .remove_pack(*id as i64)
-            .await?;
+        index_impls::packs::writer().remove_pack(*id as i64).await?;
 
         Ok(StandardResponse::Ok)
     }
 
     /// Refresh Packs
-    #[oai(path = "/packs/refresh", method = "post", tag = "crate::ApiTags::Packs")]
+    #[oai(
+        path = "/packs/refresh",
+        method = "post",
+        tag = "crate::ApiTags::Packs"
+    )]
     pub async fn refresh_packs(&self) -> Result<StandardResponse> {
-        index_impls::packs::writer()
-            .full_refresh()
-            .await?;
+        index_impls::packs::writer().full_refresh().await?;
 
         Ok(StandardResponse::Ok)
     }

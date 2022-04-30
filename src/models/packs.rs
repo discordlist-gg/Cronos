@@ -102,7 +102,7 @@ pub async fn refresh_latest_votes() -> Result<()> {
     Ok(())
 }
 
-static LIVE_DATA: Lazy<RwLock<HashMap<i64, Pack>>> =Lazy::new(Default::default);
+static LIVE_DATA: Lazy<RwLock<HashMap<i64, Pack>>> = Lazy::new(Default::default);
 
 #[inline]
 pub fn get_pack_data(id: i64) -> Option<Pack> {

@@ -78,8 +78,7 @@ pub async fn process_rows(iter: RowIterator) -> HashMap<i64, VoteStats> {
     let mut iter = iter.into_typed::<(i64, Counter)>();
 
     let mut processed_changes = HashMap::new();
-    while let Some(Ok((id, Counter(votes)))) = iter.next().await
-    {
+    while let Some(Ok((id, Counter(votes)))) = iter.next().await {
         processed_changes.insert(id, VoteStats::new(votes));
     }
 

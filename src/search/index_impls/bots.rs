@@ -6,8 +6,8 @@ use once_cell::sync::OnceCell;
 use tantivy::schema::{Field, Schema, SchemaBuilder, FAST, INDEXED, STORED, TEXT};
 use tantivy::Term;
 use tokio::sync::Semaphore;
-use crate::models;
 
+use crate::models;
 use crate::models::bots::{remove_bot_from_live, update_live_data, Bot};
 use crate::search::index;
 use crate::search::readers::bots;
@@ -94,7 +94,9 @@ impl BotIndex {
         models::bots::refresh_latest_data().await?;
 
         for bot in models::bots::all_bots() {
-            self.writer.add_document(bot.as_tantivy_doc(&self.schema)).await?;
+            self.writer
+                .add_document(bot.as_tantivy_doc(&self.schema))
+                .await?;
         }
 
         Ok(())

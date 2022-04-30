@@ -259,7 +259,10 @@ async fn log<E: Endpoint>(next: E, req: Request) -> poem::Result<Response> {
             elapsed,
             path.path(),
         );
-        error!("^^^ Continued from above -> {:?}", body.into_bytes().await.ok());
+        error!(
+            "^^^ Continued from above -> {:?}",
+            body.into_bytes().await.ok()
+        );
 
         resp.set_body("An internal server error has occurred.");
     } else {
