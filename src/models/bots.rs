@@ -12,11 +12,18 @@ use parking_lot::RwLock;
 use scylla::FromRow;
 use tantivy::schema::Schema;
 
+use crate::models::bots::flags::PREMIUM;
 use crate::models::connection::session;
 use crate::models::utils::{process_rows, VoteStats};
-use crate::search::index_impls::bots::{DESCRIPTION_FIELD, FEATURES_FIELD, ID_FIELD, PREMIUM_FIELD, TAGS_FIELD, USERNAME_FIELD};
+use crate::search::index_impls::bots::{
+    DESCRIPTION_FIELD,
+    FEATURES_FIELD,
+    ID_FIELD,
+    PREMIUM_FIELD,
+    TAGS_FIELD,
+    USERNAME_FIELD,
+};
 use crate::{derive_fetch_by_id, derive_fetch_iter};
-use crate::models::bots::flags::PREMIUM;
 
 pub mod flags {
     pub const PREMIUM: i64 = 1 << 0;
@@ -95,7 +102,10 @@ impl Bot {
         let tags_field = schema.get_field(TAGS_FIELD).unwrap();
 
         document.add_i64(id_field, *self.id);
-        document.add_u64(premium_field, if (*self.flags & PREMIUM) == 0 { 0 } else { 1 });
+        document.add_u64(
+            premium_field,
+            if (*self.flags & PREMIUM) == 0 { 0 } else { 1 },
+        );
         document.add_text(username_field, &self.username);
         document.add_text(description_field, &self.brief_description);
         document.add_u64(features_field, *self.features as u64);

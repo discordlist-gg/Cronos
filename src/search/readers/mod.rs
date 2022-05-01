@@ -171,14 +171,14 @@ fn search_aggregate(
     };
 
     let aggs: Aggregations = vec![(
-            "tags".to_string(),
-            Aggregation::Bucket(BucketAggregation {
-                bucket_agg: BucketAggregationType::Terms(terms),
-                sub_aggregation: Aggregations::default(),
-            }),
-        )]
-        .into_iter()
-        .collect();
+        "tags".to_string(),
+        Aggregation::Bucket(BucketAggregation {
+            bucket_agg: BucketAggregationType::Terms(terms),
+            sub_aggregation: Aggregations::default(),
+        }),
+    )]
+    .into_iter()
+    .collect();
     let collector = AggregationCollector::from_aggs(aggs);
 
     let (count, terms) = searcher.search(&distribution_query, &(Count, collector))?;

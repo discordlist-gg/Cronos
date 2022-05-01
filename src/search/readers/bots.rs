@@ -2,13 +2,12 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use once_cell::sync::OnceCell;
-use poem_openapi::Enum;
+use poem_openapi::{Enum, Object};
 use tantivy::collector::TopDocs;
 use tantivy::query::{BooleanQuery, Occur, Query, TermQuery};
 use tantivy::schema::{Field, IndexRecordOption};
 use tantivy::{DocAddress, IndexReader, Searcher, Term};
 use tokio::sync::{oneshot, Semaphore};
-use poem_openapi::Object;
 
 use crate::models::bots;
 use crate::search::index_impls::bots::TAGS_FIELD;
@@ -155,7 +154,7 @@ where
         let stage = apply_filter(ctx.tags_field, &filter, stage);
 
         search_docs(
-             ctx,
+            ctx,
             &mut result_addresses,
             searcher,
             stage,
@@ -214,18 +213,16 @@ fn search_docs(
             order,
             None,
         ),
-        BotsSortBy::Premium => {
-            super::execute_search(
-                searcher,
-                query,
-                results,
-                ctx.id_field,
-                collector,
-                bots::get_bot_premium,
-                order,
-                Some((ctx.premium_field, |v| v == 1))
-            )
-        },
+        BotsSortBy::Premium => super::execute_search(
+            searcher,
+            query,
+            results,
+            ctx.id_field,
+            collector,
+            bots::get_bot_premium,
+            order,
+            Some((ctx.premium_field, |v| v == 1)),
+        ),
         BotsSortBy::Trending => super::execute_search(
             searcher,
             query,
@@ -251,19 +248,24 @@ fn search_docs(
     Ok(())
 }
 
-
-fn apply_filter(tag_field: Field, filter: &BotFilter, existing_query: Box<dyn Query>) -> Box<dyn Query> {
+fn apply_filter(
+    tag_field: Field,
+    filter: &BotFilter,
+    existing_query: Box<dyn Query>,
+) -> Box<dyn Query> {
     if filter.tags.is_empty() {
-        return existing_query
+        return existing_query;
     }
 
-    let mut parts = filter.tags.iter()
+    let mut parts = filter
+        .tags
+        .iter()
         .map(|v| {
             (
                 Occur::Must,
                 Box::new(TermQuery::new(
                     Term::from_field_text(tag_field, v),
-                    IndexRecordOption::Basic
+                    IndexRecordOption::Basic,
                 )) as Box<dyn Query>,
             )
         })

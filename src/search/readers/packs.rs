@@ -148,7 +148,7 @@ where
 
     for stage in query_stages {
         let stage = apply_filter(ctx.tag_field, &filter, stage);
-        
+
         search_docs(
             ctx,
             &mut result_addresses,
@@ -229,22 +229,26 @@ fn search_docs(
     Ok(())
 }
 
-fn apply_filter(tag_field: Field, filter: &PackFilter, existing_query: Box<dyn Query>) -> Box<dyn Query> {
-    let parts = filter.category.as_ref()
-        .map(|v| {
-            (
-                Occur::Must,
-                Box::new(TermQuery::new(
-                    Term::from_field_text(tag_field, v),
-                    IndexRecordOption::Basic
-                )) as Box<dyn Query>,
-            )
-        });
+fn apply_filter(
+    tag_field: Field,
+    filter: &PackFilter,
+    existing_query: Box<dyn Query>,
+) -> Box<dyn Query> {
+    let parts = filter.category.as_ref().map(|v| {
+        (
+            Occur::Must,
+            Box::new(TermQuery::new(
+                Term::from_field_text(tag_field, v),
+                IndexRecordOption::Basic,
+            )) as Box<dyn Query>,
+        )
+    });
 
     match parts {
         None => existing_query,
-        Some(parts) => Box::new(BooleanQuery::new(vec![parts, (Occur::Must, existing_query)]))
+        Some(parts) => Box::new(BooleanQuery::new(vec![
+            parts,
+            (Occur::Must, existing_query),
+        ])),
     }
-
-
 }

@@ -61,7 +61,7 @@ impl PackIndex {
 
         let ctx = FieldContext {
             id_field,
-            tag_field
+            tag_field,
         };
 
         packs::init(ctx, search_fields, reader, limiter);

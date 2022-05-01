@@ -107,12 +107,9 @@ async fn main() -> Result<()> {
         )
         .await?;
 
-
         search::index_impls::packs::writer().full_refresh().await?;
         search::index_impls::bots::writer().full_refresh().await?;
     }
-
-
 
     let api_service = OpenApiService::new(
         (routes::bots::BotApi, routes::packs::PackApi),
