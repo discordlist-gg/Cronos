@@ -193,7 +193,7 @@ pub fn get_bot_premium(bot_id: i64) -> bool {
 
 #[inline]
 pub fn get_bot_trending_score(_bot_id: i64) -> f64 {
-    0.0
+    1.0
 }
 
 #[inline]
