@@ -119,8 +119,9 @@ checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 [[package]]
 name = "backend-common"
 version = "0.1.0"
-source = "git+https://github.com/discordlist-gg/backend-common.git#8aa7ec32a2165a966709837322627534c80c03db"
+source = "git+https://github.com/discordlist-gg/backend-common.git#c8fa1437aee39baeed4b877138d55d5c7192c89c"
 dependencies = [
+ "Inflector",
  "arc-swap",
  "chrono",
  "once_cell",
