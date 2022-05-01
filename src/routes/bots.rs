@@ -60,6 +60,9 @@ pub struct BotHit {
 
     /// The short description of the bot.
     pub brief_description: String,
+
+    /// The invite url of the bot.
+    pub invite_url: String,
 }
 
 impl From<Bot> for BotHit {
@@ -79,6 +82,13 @@ impl From<Bot> for BotHit {
             co_owner_ids: bot.co_owner_ids,
             guild_count: bot.guild_count,
             brief_description: bot.brief_description,
+            invite_url: format!(
+                "https://discord.com/oauth2/authorize\
+                ?client_id={}\
+                &permissions={}\
+                &scope=bot%20applications.commands",
+                bot.id, bot.permissions,
+            ),
         }
     }
 }
