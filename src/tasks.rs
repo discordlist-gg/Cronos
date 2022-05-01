@@ -43,7 +43,7 @@ async fn refresh_live_data_loop() {
 }
 
 pub fn start_tag_update_tasks() {
-    tokio::spawn(refresh_live_data_loop());
+    tokio::spawn(refresh_tags_loop());
 }
 
 async fn refresh_tags_loop() {
