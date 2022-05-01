@@ -3,7 +3,6 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use arc_swap::ArcSwap;
-use backend_common::tags::PackTags;
 use backend_common::types::{JsSafeBigInt, Set, Timestamp};
 use backend_common::FieldNamesAsArray;
 use futures::StreamExt;
@@ -39,7 +38,7 @@ pub struct Pack {
     pub created_on: Timestamp,
 
     /// The tag associated with this pack.
-    pub tag: PackTags,
+    pub tag: String,
 
     /// The bots that this pack contains. (In the form of IDs)
     pub bots: Vec<JsSafeBigInt>,
@@ -75,10 +74,7 @@ impl Pack {
         document.add_i64(id_field, *self.id);
         document.add_text(name_field, &self.name);
         document.add_text(description_field, &self.description);
-
-        if let Some(tag) = self.tag.iter().next() {
-            document.add_text(tag_field, &tag.name);
-        }
+        document.add_text(tag_field, &self.tag);
 
         document
     }

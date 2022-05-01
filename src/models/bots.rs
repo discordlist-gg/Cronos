@@ -3,7 +3,6 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use arc_swap::ArcSwap;
-use backend_common::tags::BotTags;
 use backend_common::types::{JsSafeBigInt, JsSafeInt, Set, Timestamp};
 use backend_common::FieldNamesAsArray;
 use futures::StreamExt;
@@ -64,7 +63,7 @@ pub struct Bot {
     pub permissions: JsSafeBigInt,
 
     /// The bot's associated tags.
-    pub tags: BotTags,
+    pub tags: Vec<String>,  // We have pre validated this on the backend.
 
     /// The timestamp that the bot was first created on.
     pub created_on: Timestamp,
@@ -111,7 +110,7 @@ impl Bot {
         document.add_u64(features_field, *self.features as u64);
 
         for tag in self.tags.iter() {
-            document.add_text(tags_field, &tag.name);
+            document.add_text(tags_field, &tag);
         }
 
         document

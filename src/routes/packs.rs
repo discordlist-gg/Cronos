@@ -63,12 +63,8 @@ impl FromTantivyDoc for PackHit {
             owner_id: pack.owner_id,
             co_owner_ids: pack.co_owner_ids,
             description: pack.description,
+            tag: pack.tag,
             bots,
-            tag: pack
-                .tag
-                .as_ref()
-                .map(|v| v.name.to_string())
-                .unwrap_or_default(),
         })
     }
 }

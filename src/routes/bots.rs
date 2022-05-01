@@ -76,7 +76,7 @@ impl From<Bot> for BotHit {
             flags: bot.features,
             features: bot.features,
             permissions: bot.permissions,
-            tags: bot.tags.iter().map(|v| v.name.to_string()).collect(),
+            tags: bot.tags,
             created_on: bot.created_on,
             owner_id: bot.owner_id,
             co_owner_ids: bot.co_owner_ids,
