@@ -1,6 +1,5 @@
 #[macro_use]
 extern crate tracing;
-extern crate core;
 
 use std::num::NonZeroU32;
 use std::path::Path;
@@ -107,7 +106,13 @@ async fn main() -> Result<()> {
             args.max_concurrency,
         )
         .await?;
+
+
+        search::index_impls::packs::writer().full_refresh().await?;
+        search::index_impls::bots::writer().full_refresh().await?;
     }
+
+
 
     let api_service = OpenApiService::new(
         (routes::bots::BotApi, routes::packs::PackApi),

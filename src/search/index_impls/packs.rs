@@ -11,6 +11,7 @@ use crate::models;
 use crate::models::packs::{remove_pack_from_live, update_live_data, Pack};
 use crate::search::index;
 use crate::search::readers::packs;
+use crate::search::readers::packs::FieldContext;
 use crate::search::writer::Writer;
 
 pub static ID_FIELD: &str = "id";
@@ -51,13 +52,19 @@ impl PackIndex {
             index::open_or_create(path, default_schema(), max_concurrency).await?;
 
         let id_field = schema.get_field(ID_FIELD).unwrap();
+        let tag_field = schema.get_field(TAG_FIELD).unwrap();
         let search_fields = vec![
             schema.get_field(NAME_FIELD).unwrap(),
             schema.get_field(DESCRIPTION_FIELD).unwrap(),
-            schema.get_field(TAG_FIELD).unwrap(),
+            tag_field,
         ];
 
-        packs::init(id_field, search_fields, reader, limiter);
+        let ctx = FieldContext {
+            id_field,
+            tag_field
+        };
+
+        packs::init(ctx, search_fields, reader, limiter);
 
         Ok(Self {
             id_field,
@@ -108,7 +115,7 @@ fn default_schema() -> Schema {
     builder.add_i64_field(ID_FIELD, INDEXED | FAST | STORED);
     builder.add_text_field(NAME_FIELD, TEXT);
     builder.add_text_field(DESCRIPTION_FIELD, TEXT);
-    builder.add_text_field(TAG_FIELD, TEXT);
+    builder.add_text_field(TAG_FIELD, TEXT | FAST);
 
     builder.build()
 }

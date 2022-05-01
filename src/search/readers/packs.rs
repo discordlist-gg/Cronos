@@ -2,11 +2,11 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use once_cell::sync::OnceCell;
-use poem_openapi::Enum;
+use poem_openapi::{Enum, Object};
 use tantivy::collector::TopDocs;
-use tantivy::query::Query;
-use tantivy::schema::Field;
-use tantivy::{DocAddress, IndexReader, Searcher};
+use tantivy::query::{BooleanQuery, Occur, Query, TermQuery};
+use tantivy::schema::{Field, IndexRecordOption};
+use tantivy::{DocAddress, IndexReader, Searcher, Term};
 use tokio::sync::{oneshot, Semaphore};
 
 use crate::models::packs;
@@ -21,17 +21,18 @@ pub fn reader() -> &'static InnerReader {
 }
 
 pub fn init(
-    id_field: Field,
+    ctx: FieldContext,
     search_fields: Vec<Field>,
     reader: IndexReader,
     concurrency_limiter: Arc<Semaphore>,
 ) {
     PACK_READER.get_or_init(|| {
-        InnerReader::new(id_field, search_fields, reader, concurrency_limiter)
+        InnerReader::new(ctx, search_fields, reader, concurrency_limiter)
     });
 }
 
 #[derive(Enum, Debug, Copy, Clone)]
+#[oai(rename_all = "lowercase")]
 pub enum PacksSortBy {
     /// Sort by relevance.
     Relevance,
@@ -52,8 +53,21 @@ impl Default for PacksSortBy {
     }
 }
 
+#[derive(Default, Debug, Object)]
+pub struct PackFilter {
+    /// A specific category to filter out results.
+    #[oai(validator(min_length = 2, max_length = 32))]
+    category: Option<String>,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct FieldContext {
+    pub id_field: Field,
+    pub tag_field: Field,
+}
+
 pub struct InnerReader {
-    id_field: Field,
+    ctx: FieldContext,
     reader: IndexReader,
     concurrency_limiter: Arc<Semaphore>,
     search_fields: Arc<Vec<Field>>,
@@ -61,13 +75,13 @@ pub struct InnerReader {
 
 impl InnerReader {
     fn new(
-        id_field: Field,
+        ctx: FieldContext,
         search_fields: Vec<Field>,
         reader: IndexReader,
         concurrency_limiter: Arc<Semaphore>,
     ) -> Self {
         Self {
-            id_field,
+            ctx,
             reader,
             concurrency_limiter,
             search_fields: search_fields.into(),
@@ -77,6 +91,7 @@ impl InnerReader {
     pub async fn search<T>(
         &self,
         query: Option<String>,
+        filter: PackFilter,
         limit: usize,
         offset: usize,
         sort_by: PacksSortBy,
@@ -89,12 +104,13 @@ impl InnerReader {
         let (waker, rx) = oneshot::channel();
 
         let searcher = self.reader.searcher();
-        let id = self.id_field;
         let fields = self.search_fields.clone();
+        let ctx = self.ctx;
 
         rayon::spawn(move || {
             let state = execute_search(
-                id,
+                ctx,
+                filter,
                 fields.as_ref(),
                 &searcher,
                 query,
@@ -113,7 +129,8 @@ impl InnerReader {
 
 #[allow(clippy::too_many_arguments)]
 fn execute_search<T>(
-    id_field: Field,
+    ctx: FieldContext,
+    filter: PackFilter,
     search_fields: &[Field],
     searcher: &Searcher,
     query: Option<String>,
@@ -130,8 +147,10 @@ where
     let mut result_addresses = vec![];
 
     for stage in query_stages {
+        let stage = apply_filter(ctx.tag_field, &filter, stage);
+        
         search_docs(
-            id_field,
+            ctx,
             &mut result_addresses,
             searcher,
             stage,
@@ -153,13 +172,13 @@ where
     )?;
 
     let docs = result_addresses.into_iter().skip(offset);
-    let loaded = extract_search_data(searcher, id_field, docs)?;
+    let loaded = extract_search_data(searcher, ctx.id_field, docs)?;
 
     Ok((count, dist, loaded))
 }
 
 fn search_docs(
-    id_field: Field,
+    ctx: FieldContext,
     results: &mut Vec<DocAddress>,
     searcher: &Searcher,
     query: Box<dyn Query>,
@@ -179,30 +198,53 @@ fn search_docs(
             searcher,
             query,
             results,
-            id_field,
+            ctx.id_field,
             collector,
             packs::get_pack_bot_count,
             order,
+            None,
         ),
         PacksSortBy::Trending => super::execute_search(
             searcher,
             query,
             results,
-            id_field,
+            ctx.id_field,
             collector,
             packs::get_pack_trending_score,
             order,
+            None,
         ),
         PacksSortBy::Likes => super::execute_search(
             searcher,
             query,
             results,
-            id_field,
+            ctx.id_field,
             collector,
             packs::get_pack_likes,
             order,
+            None,
         ),
     }?;
 
     Ok(())
+}
+
+fn apply_filter(tag_field: Field, filter: &PackFilter, existing_query: Box<dyn Query>) -> Box<dyn Query> {
+    let parts = filter.category.as_ref()
+        .map(|v| {
+            (
+                Occur::Must,
+                Box::new(TermQuery::new(
+                    Term::from_field_text(tag_field, v),
+                    IndexRecordOption::Basic
+                )) as Box<dyn Query>,
+            )
+        });
+
+    match parts {
+        None => existing_query,
+        Some(parts) => Box::new(BooleanQuery::new(vec![parts, (Occur::Must, existing_query)]))
+    }
+
+
 }

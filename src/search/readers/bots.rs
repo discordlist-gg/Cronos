@@ -4,10 +4,11 @@ use anyhow::Result;
 use once_cell::sync::OnceCell;
 use poem_openapi::Enum;
 use tantivy::collector::TopDocs;
-use tantivy::query::Query;
-use tantivy::schema::Field;
-use tantivy::{DocAddress, IndexReader, Searcher};
+use tantivy::query::{BooleanQuery, Occur, Query, TermQuery};
+use tantivy::schema::{Field, IndexRecordOption};
+use tantivy::{DocAddress, IndexReader, Searcher, Term};
 use tokio::sync::{oneshot, Semaphore};
+use poem_openapi::Object;
 
 use crate::models::bots;
 use crate::search::index_impls::bots::TAGS_FIELD;
@@ -21,17 +22,18 @@ pub fn reader() -> &'static InnerReader {
 }
 
 pub fn init(
-    id_field: Field,
+    ctx: FieldContext,
     search_fields: Vec<Field>,
     reader: IndexReader,
     concurrency_limiter: Arc<Semaphore>,
 ) {
     BOT_READER.get_or_init(|| {
-        InnerReader::new(id_field, search_fields, reader, concurrency_limiter)
+        InnerReader::new(ctx, search_fields, reader, concurrency_limiter)
     });
 }
 
 #[derive(Enum, Debug, Copy, Clone)]
+#[oai(rename_all = "lowercase")]
 pub enum BotsSortBy {
     /// Sort by relevance.
     Relevance,
@@ -55,8 +57,22 @@ impl Default for BotsSortBy {
     }
 }
 
+#[derive(Default, Debug, Object)]
+pub struct BotFilter {
+    /// A set of tags to filter results by.
+    #[oai(validator(max_items = 10, unique_items), default)]
+    tags: Vec<String>,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct FieldContext {
+    pub id_field: Field,
+    pub premium_field: Field,
+    pub tags_field: Field,
+}
+
 pub struct InnerReader {
-    id_field: Field,
+    ctx: FieldContext,
     reader: IndexReader,
     concurrency_limiter: Arc<Semaphore>,
     search_fields: Arc<Vec<Field>>,
@@ -64,13 +80,13 @@ pub struct InnerReader {
 
 impl InnerReader {
     fn new(
-        id_field: Field,
+        ctx: FieldContext,
         search_fields: Vec<Field>,
         reader: IndexReader,
         concurrency_limiter: Arc<Semaphore>,
     ) -> Self {
         Self {
-            id_field,
+            ctx,
             reader,
             concurrency_limiter,
             search_fields: search_fields.into(),
@@ -80,6 +96,7 @@ impl InnerReader {
     pub async fn search<T>(
         &self,
         query: Option<String>,
+        filter: BotFilter,
         limit: usize,
         offset: usize,
         sort_by: BotsSortBy,
@@ -92,12 +109,13 @@ impl InnerReader {
         let (waker, rx) = oneshot::channel();
 
         let searcher = self.reader.searcher();
-        let id = self.id_field;
+        let ctx = self.ctx;
         let fields = self.search_fields.clone();
 
         rayon::spawn(move || {
             let state = execute_search(
-                id,
+                ctx,
+                filter,
                 fields.as_ref(),
                 &searcher,
                 query,
@@ -116,7 +134,8 @@ impl InnerReader {
 
 #[allow(clippy::too_many_arguments)]
 fn execute_search<T>(
-    id_field: Field,
+    ctx: FieldContext,
+    filter: BotFilter,
     search_fields: &[Field],
     searcher: &Searcher,
     query: Option<String>,
@@ -133,8 +152,10 @@ where
     let mut result_addresses = vec![];
 
     for stage in query_stages {
+        let stage = apply_filter(ctx.tags_field, &filter, stage);
+
         search_docs(
-            id_field,
+             ctx,
             &mut result_addresses,
             searcher,
             stage,
@@ -148,21 +169,26 @@ where
         }
     }
 
+    info!("COmpletes!");
+
     let (count, dist) = super::search_aggregate(
         query.as_deref(),
         TAGS_FIELD.to_string(),
         search_fields,
         searcher,
     )?;
+    info!("ahgghg2");
 
     let docs = result_addresses.into_iter().skip(offset);
-    let loaded = extract_search_data(searcher, id_field, docs)?;
+    let loaded = extract_search_data(searcher, ctx.id_field, docs)?;
+
+    info!("ahgghg");
 
     Ok((count, dist, loaded))
 }
 
 fn search_docs(
-    id_field: Field,
+    ctx: FieldContext,
     results: &mut Vec<DocAddress>,
     searcher: &Searcher,
     query: Box<dyn Query>,
@@ -182,39 +208,68 @@ fn search_docs(
             searcher,
             query,
             results,
-            id_field,
+            ctx.id_field,
             collector,
             bots::get_bot_guild_count,
             order,
+            None,
         ),
-        BotsSortBy::Premium => super::execute_search(
-            searcher,
-            query,
-            results,
-            id_field,
-            collector,
-            bots::get_bot_premium,
-            order,
-        ),
+        BotsSortBy::Premium => {
+            super::execute_search(
+                searcher,
+                query,
+                results,
+                ctx.id_field,
+                collector,
+                bots::get_bot_premium,
+                order,
+                Some((ctx.premium_field, |v| v == 1))
+            )
+        },
         BotsSortBy::Trending => super::execute_search(
             searcher,
             query,
             results,
-            id_field,
+            ctx.id_field,
             collector,
             bots::get_bot_trending_score,
             order,
+            None,
         ),
         BotsSortBy::Votes => super::execute_search(
             searcher,
             query,
             results,
-            id_field,
+            ctx.id_field,
             collector,
             bots::get_bot_votes,
             order,
+            None,
         ),
     }?;
 
     Ok(())
+}
+
+
+fn apply_filter(tag_field: Field, filter: &BotFilter, existing_query: Box<dyn Query>) -> Box<dyn Query> {
+    if filter.tags.is_empty() {
+        return existing_query
+    }
+
+    let mut parts = filter.tags.iter()
+        .map(|v| {
+            (
+                Occur::Must,
+                Box::new(TermQuery::new(
+                    Term::from_field_text(tag_field, v),
+                    IndexRecordOption::Basic
+                )) as Box<dyn Query>,
+            )
+        })
+        .collect::<Vec<(Occur, Box<dyn Query>)>>();
+
+    parts.push((Occur::Must, existing_query));
+
+    Box::new(BooleanQuery::new(parts))
 }

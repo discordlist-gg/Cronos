@@ -12,7 +12,7 @@ use crate::models::bots::get_bot_data;
 use crate::models::packs::get_pack_data;
 use crate::routes::bots::BotHit;
 use crate::routes::StandardResponse;
-use crate::search::readers::packs::PacksSortBy;
+use crate::search::readers::packs::{PackFilter, PacksSortBy};
 use crate::search::readers::Order;
 use crate::search::{index_impls, readers, FromTantivyDoc};
 
@@ -105,13 +105,6 @@ pub struct PackSearchPayload {
     order: Order,
 }
 
-#[derive(Default, Debug, Object)]
-pub struct PackFilter {
-    /// A specific category to filter out results.
-    #[oai(validator(min_length = 2, max_length = 32))]
-    category: Option<String>,
-}
-
 #[derive(Debug, Object)]
 #[oai(rename_all = "camelCase")]
 pub struct PackSearchResult {
@@ -183,6 +176,7 @@ impl PackApi {
         let (num_hits, dist, hits) = readers::packs::reader()
             .search::<PackHit>(
                 payload.0.query,
+                payload.0.filter,
                 limit,
                 offset,
                 payload.0.sort_by,

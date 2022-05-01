@@ -10,7 +10,7 @@ use tantivy::Document;
 
 use crate::models::bots::{get_bot_data, Bot};
 use crate::routes::StandardResponse;
-use crate::search::readers::bots::BotsSortBy;
+use crate::search::readers::bots::{BotFilter, BotsSortBy};
 use crate::search::readers::Order;
 use crate::search::{index_impls, readers, FromTantivyDoc};
 
@@ -134,17 +134,6 @@ pub struct BotSearchPayload {
     order: Order,
 }
 
-#[derive(Default, Debug, Object)]
-pub struct BotFilter {
-    /// A specific category to filter out results.
-    #[oai(validator(min_length = 2, max_length = 32))]
-    category: Option<String>,
-
-    /// A set of tags to filter results by.
-    #[oai(validator(max_items = 10, unique_items), default)]
-    tags: Vec<String>,
-}
-
 #[derive(Debug, Object)]
 #[oai(rename_all = "camelCase")]
 pub struct BotSearchResult {
@@ -212,6 +201,7 @@ impl BotApi {
         let (num_hits, dist, hits) = readers::bots::reader()
             .search::<BotHit>(
                 payload.0.query,
+                payload.0.filter,
                 limit,
                 offset,
                 payload.0.sort_by,
