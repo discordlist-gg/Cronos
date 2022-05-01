@@ -52,7 +52,8 @@ impl FromTantivyDoc for PackHit {
             .bots
             .iter()
             .filter_map(|v| get_bot_data(v.0))
-            .map(|v| BotHit::from(v))
+            .filter(|b| b.is_packable)
+            .map(BotHit::from)
             .collect();
 
         Some(Self {
