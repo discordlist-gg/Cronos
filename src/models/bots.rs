@@ -3,7 +3,6 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use arc_swap::ArcSwap;
-use backend_common::tags::BotTags;
 use backend_common::types::{JsSafeBigInt, JsSafeInt, Set, Timestamp};
 use backend_common::FieldNamesAsArray;
 use futures::StreamExt;
@@ -12,12 +11,14 @@ use parking_lot::RwLock;
 use scylla::FromRow;
 use tantivy::schema::Schema;
 
+use crate::models::bots::flags::PREMIUM;
 use crate::models::connection::session;
 use crate::models::utils::{process_rows, VoteStats};
 use crate::search::index_impls::bots::{
     DESCRIPTION_FIELD,
     FEATURES_FIELD,
     ID_FIELD,
+    PREMIUM_FIELD,
     TAGS_FIELD,
     USERNAME_FIELD,
 };
@@ -62,7 +63,7 @@ pub struct Bot {
     pub permissions: JsSafeBigInt,
 
     /// The bot's associated tags.
-    pub tags: BotTags,
+    pub tags: Vec<String>, // We have pre validated this on the backend.
 
     /// The timestamp that the bot was first created on.
     pub created_on: Timestamp,
@@ -93,18 +94,23 @@ impl Bot {
         let mut document = tantivy::Document::new();
 
         let id_field = schema.get_field(ID_FIELD).unwrap();
+        let premium_field = schema.get_field(PREMIUM_FIELD).unwrap();
         let username_field = schema.get_field(USERNAME_FIELD).unwrap();
         let description_field = schema.get_field(DESCRIPTION_FIELD).unwrap();
         let features_field = schema.get_field(FEATURES_FIELD).unwrap();
         let tags_field = schema.get_field(TAGS_FIELD).unwrap();
 
         document.add_i64(id_field, *self.id);
+        document.add_u64(
+            premium_field,
+            if (*self.flags & PREMIUM) == 0 { 0 } else { 1 },
+        );
         document.add_text(username_field, &self.username);
         document.add_text(description_field, &self.brief_description);
         document.add_u64(features_field, *self.features as u64);
 
         for tag in self.tags.iter() {
-            document.add_text(tags_field, &tag.name);
+            document.add_text(tags_field, &tag);
         }
 
         document
@@ -187,7 +193,7 @@ pub fn get_bot_premium(bot_id: i64) -> bool {
 
 #[inline]
 pub fn get_bot_trending_score(_bot_id: i64) -> f64 {
-    0.0
+    1.0
 }
 
 #[inline]

@@ -12,7 +12,7 @@ use crate::models::bots::get_bot_data;
 use crate::models::packs::get_pack_data;
 use crate::routes::bots::BotHit;
 use crate::routes::StandardResponse;
-use crate::search::readers::packs::PacksSortBy;
+use crate::search::readers::packs::{PackFilter, PacksSortBy};
 use crate::search::readers::Order;
 use crate::search::{index_impls, readers, FromTantivyDoc};
 
@@ -63,12 +63,8 @@ impl FromTantivyDoc for PackHit {
             owner_id: pack.owner_id,
             co_owner_ids: pack.co_owner_ids,
             description: pack.description,
+            tag: pack.tag,
             bots,
-            tag: pack
-                .tag
-                .as_ref()
-                .map(|v| v.name.to_string())
-                .unwrap_or_default(),
         })
     }
 }
@@ -103,13 +99,6 @@ pub struct PackSearchPayload {
     /// Order results Asc or Desc.
     #[oai(default)]
     order: Order,
-}
-
-#[derive(Default, Debug, Object)]
-pub struct PackFilter {
-    /// A specific category to filter out results.
-    #[oai(validator(min_length = 2, max_length = 32))]
-    category: Option<String>,
 }
 
 #[derive(Debug, Object)]
@@ -183,6 +172,7 @@ impl PackApi {
         let (num_hits, dist, hits) = readers::packs::reader()
             .search::<PackHit>(
                 payload.0.query,
+                payload.0.filter,
                 limit,
                 offset,
                 payload.0.sort_by,

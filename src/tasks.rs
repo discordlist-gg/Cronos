@@ -41,23 +41,3 @@ async fn refresh_live_data_loop() {
         }
     }
 }
-
-pub fn start_tag_update_tasks() {
-    tokio::spawn(refresh_tags_loop());
-}
-
-async fn refresh_tags_loop() {
-    let mut interval = interval(Duration::from_secs(120));
-
-    loop {
-        interval.tick().await;
-
-        if let Err(e) = crate::models::tags::refresh_bot_tags().await {
-            error!("Failed to update bot tags due to error: {}", e);
-        }
-
-        if let Err(e) = crate::models::tags::refresh_pack_tags().await {
-            error!("Failed to update pack tags due to error: {}", e);
-        }
-    }
-}

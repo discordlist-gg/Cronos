@@ -11,7 +11,7 @@ use tantivy::aggregation::agg_req::{
 use tantivy::aggregation::agg_result::{AggregationResult, BucketResult};
 use tantivy::aggregation::bucket::TermsAggregation;
 use tantivy::aggregation::AggregationCollector;
-use tantivy::collector::{Count, TopDocs};
+use tantivy::collector::{Count, FilterCollector, TopDocs};
 use tantivy::fastfield::FastFieldReader;
 use tantivy::query::Query;
 use tantivy::schema::Field;
@@ -25,6 +25,7 @@ pub mod packs;
 pub(crate) type SearchResult<T> = (usize, HashMap<String, usize>, Vec<T>);
 
 #[derive(Enum, Debug, Copy, Clone)]
+#[oai(rename_all = "lowercase")]
 pub enum Order {
     /// Order in descending order.
     Desc,
@@ -39,6 +40,7 @@ impl Default for Order {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn execute_search<T>(
     searcher: &Searcher,
     query: Box<dyn Query>,
@@ -47,16 +49,17 @@ pub(crate) fn execute_search<T>(
     collector: TopDocs,
     cb: fn(i64) -> T,
     order: Order,
+    filter: Option<(Field, fn(u64) -> bool)>,
 ) -> anyhow::Result<()>
 where
     T: PartialOrd + Clone + Send + Sync + 'static,
 {
     match order {
         Order::Desc => {
-            collector_for_id_desc(searcher, query, results, field, collector, cb)
+            collector_for_id_desc(searcher, query, results, field, collector, cb, filter)
         },
         Order::Asc => {
-            collector_for_id_asc(searcher, query, results, field, collector, cb)
+            collector_for_id_asc(searcher, query, results, field, collector, cb, filter)
         },
     }
 }
@@ -68,6 +71,7 @@ pub(crate) fn collector_for_id_desc<T>(
     field: Field,
     collector: TopDocs,
     cb: fn(i64) -> T,
+    filter: Option<(Field, fn(u64) -> bool)>,
 ) -> anyhow::Result<()>
 where
     T: PartialOrd + Clone + Send + Sync + 'static,
@@ -83,7 +87,15 @@ where
         }
     });
 
-    let docs = searcher.search(&query, &collector)?;
+    let docs = match filter {
+        None => searcher.search(&query, &collector),
+        Some((field, pred)) => {
+            info!("filtering???");
+            let filter = FilterCollector::new(field, pred, collector);
+            searcher.search(&query, &filter)
+        },
+    }?;
+
     results.extend(docs.into_iter().map(|v| v.1));
 
     Ok(())
@@ -96,6 +108,7 @@ pub(crate) fn collector_for_id_asc<T>(
     field: Field,
     collector: TopDocs,
     cb: fn(i64) -> T,
+    filter: Option<(Field, fn(u64) -> bool)>,
 ) -> anyhow::Result<()>
 where
     T: PartialOrd + Clone + Send + Sync + 'static,
@@ -111,7 +124,14 @@ where
         }
     });
 
-    let docs = searcher.search(&query, &collector)?;
+    let docs = match filter {
+        None => searcher.search(&query, &collector),
+        Some((field, pred)) => {
+            let filter = FilterCollector::new(field, pred, collector);
+            searcher.search(&query, &filter)
+        },
+    }?;
+
     results.extend(docs.into_iter().map(|v| v.1));
 
     Ok(())
@@ -144,15 +164,17 @@ fn search_aggregate(
 ) -> anyhow::Result<(usize, HashMap<String, usize>)> {
     let distribution_query = crate::search::queries::distribution_query(query, fields);
 
-    let mut terms = TermsAggregation::default();
-    terms.field = field_name;
-    terms.size = Some(u32::MAX);
+    let terms = TermsAggregation {
+        field: field_name,
+        size: Some(1000),
+        ..Default::default()
+    };
 
     let aggs: Aggregations = vec![(
         "tags".to_string(),
         Aggregation::Bucket(BucketAggregation {
             bucket_agg: BucketAggregationType::Terms(terms),
-            sub_aggregation: Aggregations::new(),
+            sub_aggregation: Aggregations::default(),
         }),
     )]
     .into_iter()

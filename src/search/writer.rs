@@ -114,12 +114,15 @@ fn handle_message(op: WriterOp, writer: &mut IndexWriter) -> anyhow::Result<()> 
             let _ = waker.send(());
         },
         WriterOp::AddDocument(doc) => {
+            debug!("Adding document: {:?}", doc);
             writer.add_document(doc)?;
         },
         WriterOp::RemoveDocuments(term) => {
+            debug!("Removing document: {:?}", term);
             writer.delete_term(term);
         },
         WriterOp::ClearAll => {
+            debug!("Clearing all documents");
             writer.delete_all_documents()?;
         },
     };

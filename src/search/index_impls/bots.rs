@@ -11,9 +11,11 @@ use crate::models;
 use crate::models::bots::{remove_bot_from_live, update_live_data, Bot};
 use crate::search::index;
 use crate::search::readers::bots;
+use crate::search::readers::bots::FieldContext;
 use crate::search::writer::Writer;
 
 pub static ID_FIELD: &str = "id";
+pub static PREMIUM_FIELD: &str = "premium";
 pub static FEATURES_FIELD: &str = "features";
 pub static USERNAME_FIELD: &str = "username";
 pub static DESCRIPTION_FIELD: &str = "brief_description";
@@ -52,13 +54,21 @@ impl BotIndex {
             index::open_or_create(path, default_schema(), max_concurrency).await?;
 
         let id_field = schema.get_field(ID_FIELD).unwrap();
+        let premium_field = schema.get_field(PREMIUM_FIELD).unwrap();
+        let tags_field = schema.get_field(TAGS_FIELD).unwrap();
         let search_fields = vec![
             schema.get_field(USERNAME_FIELD).unwrap(),
             schema.get_field(DESCRIPTION_FIELD).unwrap(),
-            schema.get_field(TAGS_FIELD).unwrap(),
+            tags_field,
         ];
 
-        bots::init(id_field, search_fields, reader, limiter);
+        let ctx = FieldContext {
+            id_field,
+            premium_field,
+            tags_field,
+        };
+
+        bots::init(ctx, search_fields, reader, limiter);
 
         Ok(Self {
             id_field,
@@ -108,9 +118,10 @@ fn default_schema() -> Schema {
 
     builder.add_i64_field(ID_FIELD, INDEXED | FAST | STORED);
     builder.add_u64_field(FEATURES_FIELD, INDEXED | FAST);
+    builder.add_u64_field(PREMIUM_FIELD, INDEXED | FAST);
     builder.add_text_field(USERNAME_FIELD, TEXT);
     builder.add_text_field(DESCRIPTION_FIELD, TEXT);
-    builder.add_text_field(TAGS_FIELD, TEXT);
+    builder.add_text_field(TAGS_FIELD, TEXT | FAST);
 
     builder.build()
 }

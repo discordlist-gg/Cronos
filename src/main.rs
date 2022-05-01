@@ -1,6 +1,5 @@
 #[macro_use]
 extern crate tracing;
-extern crate core;
 
 use std::num::NonZeroU32;
 use std::path::Path;
@@ -89,7 +88,6 @@ async fn main() -> Result<()> {
 
     tasks::start_vote_update_tasks();
     tasks::start_live_data_tasks();
-    tasks::start_tag_update_tasks();
 
     {
         let limiter = Arc::new(Semaphore::new(args.max_concurrency));
@@ -107,6 +105,9 @@ async fn main() -> Result<()> {
             args.max_concurrency,
         )
         .await?;
+
+        search::index_impls::packs::writer().full_refresh().await?;
+        search::index_impls::bots::writer().full_refresh().await?;
     }
 
     let api_service = OpenApiService::new(
