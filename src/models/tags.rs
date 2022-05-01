@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+
 use backend_common::tags::Flag;
 use scylla::IntoTypedRows;
 
@@ -27,9 +28,7 @@ async fn fetch_bot_tags() -> anyhow::Result<BTreeMap<String, Flag>> {
 
     let mut map = BTreeMap::new();
     for (name, category) in items {
-        map.insert(name, Flag {
-            category,
-        });
+        map.insert(name, Flag { category });
     }
 
     Ok(map)
@@ -46,9 +45,12 @@ async fn fetch_pack_tags() -> anyhow::Result<BTreeMap<String, Flag>> {
 
     let mut map = BTreeMap::new();
     for (name,) in items {
-        map.insert(name, Flag {
-            category: "".to_string(),
-        });
+        map.insert(
+            name,
+            Flag {
+                category: "".to_string(),
+            },
+        );
     }
 
     Ok(map)

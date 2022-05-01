@@ -181,7 +181,7 @@ pub fn get_bot_votes(bot_id: i64) -> u64 {
 pub fn get_bot_premium(bot_id: i64) -> bool {
     match get_bot_data(bot_id) {
         None => false,
-        Some(b) => (*b.flags & flags::PREMIUM) != 0
+        Some(b) => (*b.flags & flags::PREMIUM) != 0,
     }
 }
 
