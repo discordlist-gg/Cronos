@@ -8,9 +8,10 @@ description = "Dlist's premium search system built for performance and quality."
 
 [dependencies]
 # Search engine requirements
-tantivy = "0.17"
+tantivy = { git = "https://github.com/quickwit-oss/tantivy.git" }
 rayon = "1"
 
+parking_lot = "0.12.0"
 anyhow = "1.0.56"  # Error Handling
 scylla = "0.4.4"  # Database driver
 flume = "0.10.12"  # Internal communications between async <-> sync APIs
@@ -18,6 +19,7 @@ governor = "0.4.2"  # Ratelimiter
 once_cell = "1.10.0"  # Lazy globals
 futures = "0.3.21"
 arc-swap = "1.5.0"
+deunicode = "1.3.1"
 
 # Logging
 tracing = "0.1.33"

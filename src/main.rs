@@ -1,7 +1,10 @@
 #[macro_use]
 extern crate tracing;
+extern crate core;
 
 use std::num::NonZeroU32;
+use std::path::Path;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use anyhow::Result;
@@ -15,11 +18,13 @@ use poem::listener::TcpListener;
 use poem::middleware::Cors;
 use poem::{Endpoint, EndpointExt, IntoResponse, Request, Response, Route, Server};
 use poem_openapi::{OpenApiService, Tags};
+use tokio::sync::Semaphore;
 use tracing_subscriber::filter::LevelFilter;
 
 pub(crate) mod models;
 mod routes;
 pub(crate) mod search;
+mod tasks;
 
 type Ratelimiter = governor::RateLimiter<
     String,
@@ -52,6 +57,12 @@ pub struct Config {
 
     #[clap(long)]
     init_tables: bool,
+
+    #[clap(long, env)]
+    data_path: String,
+
+    #[clap(long, env, default_value_t = 50)]
+    max_concurrency: usize,
 }
 
 #[tokio::main]
@@ -67,9 +78,31 @@ async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
     {
-        let nodes = args.cluster_nodes.split(";").collect::<Vec<&str>>();
+        let nodes = args.cluster_nodes.split(';').collect::<Vec<&str>>();
 
         models::connection::connect(&nodes, args.init_tables).await?;
+    }
+
+    tasks::start_vote_update_tasks();
+    tasks::start_live_data_tasks();
+    tasks::start_tag_update_tasks();
+
+    {
+        let limiter = Arc::new(Semaphore::new(args.max_concurrency));
+        let base_path = Path::new(&args.data_path);
+        search::index_impls::bots::init_index(
+            &base_path.join("bots"),
+            limiter.clone(),
+            args.max_concurrency,
+        )
+        .await?;
+
+        search::index_impls::packs::init_index(
+            &base_path.join("packs"),
+            limiter.clone(),
+            args.max_concurrency,
+        )
+        .await?;
     }
 
     let api_service = OpenApiService::new(
@@ -212,22 +245,37 @@ async fn log<E: Endpoint>(next: E, req: Request) -> poem::Result<Response> {
     let res = next.call(req).await;
     let elapsed = start.elapsed();
 
-    let resp = match res {
+    let mut resp = match res {
         Ok(r) => r.into_response(),
-        Err(e) => {
-            error!("Unhandled error: {}", e);
-            e.into_response()
-        },
+        Err(e) => e.into_response(),
     };
 
-    info!(
-        "{} -> {} {} [ {:?} ] - {:?}",
-        method.as_str(),
-        resp.status().as_u16(),
-        resp.status().canonical_reason().unwrap_or(""),
-        elapsed,
-        path.path(),
-    );
+    if resp.status().as_u16() >= 500 {
+        let body = resp.take_body();
+        error!(
+            "{} -> {} {} [ {:?} ] - {:?}",
+            method.as_str(),
+            resp.status().as_u16(),
+            resp.status().canonical_reason().unwrap_or(""),
+            elapsed,
+            path.path(),
+        );
+        error!(
+            "^^^ Continued from above -> {:?}",
+            body.into_bytes().await.ok()
+        );
+
+        resp.set_body("An internal server error has occurred.");
+    } else {
+        info!(
+            "{} -> {} {} [ {:?} ] - {:?}",
+            method.as_str(),
+            resp.status().as_u16(),
+            resp.status().canonical_reason().unwrap_or(""),
+            elapsed,
+            path.path(),
+        );
+    }
 
     Ok(resp)
 }
