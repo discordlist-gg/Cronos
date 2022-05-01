@@ -85,6 +85,7 @@ async fn main() -> Result<()> {
 
     tasks::start_vote_update_tasks();
     tasks::start_live_data_tasks();
+    tasks::start_tag_update_tasks();
 
     {
         let limiter = Arc::new(Semaphore::new(args.max_concurrency));

@@ -25,6 +25,11 @@ CREATE TABLE IF NOT EXISTS bot_votes (
     all_time_votes counter,
     PRIMARY KEY ( id )
 );
+CREATE TABLE IF NOT EXISTS bot_tags (
+    name text,
+    category text,
+    PRIMARY KEY ( name )
+);
 CREATE TABLE IF NOT EXISTS packs (
     id bigint,
     name text,
@@ -44,4 +49,7 @@ CREATE TABLE IF NOT EXISTS pack_votes (
     all_time_votes counter,
     PRIMARY KEY ( id )
 );
-
+CREATE TABLE IF NOT EXISTS pack_tags (
+    name text,
+    PRIMARY KEY ( name )
+);

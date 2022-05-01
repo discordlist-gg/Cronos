@@ -64,9 +64,8 @@ impl FromTantivyDoc for PackHit {
             co_owner_ids: pack.co_owner_ids,
             description: pack.description,
             bots,
-            tag: pack
-                .tag
-                .first()
+            tag: pack.tag
+                .as_ref()
                 .map(|v| v.name.to_string())
                 .unwrap_or_default(),
         })
