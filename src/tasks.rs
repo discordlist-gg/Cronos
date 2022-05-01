@@ -53,11 +53,11 @@ async fn refresh_tags_loop() {
         interval.tick().await;
 
         if let Err(e) = crate::models::tags::refresh_bot_tags().await {
-            error!("Failed to update bot data due to error: {}", e);
+            error!("Failed to update bot tags due to error: {}", e);
         }
 
         if let Err(e) = crate::models::tags::refresh_pack_tags().await {
-            error!("Failed to update pack data due to error: {}", e);
+            error!("Failed to update pack tags due to error: {}", e);
         }
     }
 }
