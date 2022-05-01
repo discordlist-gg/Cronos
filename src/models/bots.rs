@@ -23,6 +23,10 @@ use crate::search::index_impls::bots::{
 };
 use crate::{derive_fetch_by_id, derive_fetch_iter};
 
+pub mod flags {
+    pub const PREMIUM: i64 = 1 << 0;
+}
+
 #[derive(FromRow, FieldNamesAsArray, Debug, Clone)]
 pub struct Bot {
     /// The snowflake ID of the bot.
@@ -174,8 +178,11 @@ pub fn get_bot_votes(bot_id: i64) -> u64 {
 }
 
 #[inline]
-pub fn get_bot_premium(_bot_id: i64) -> bool {
-    false
+pub fn get_bot_premium(bot_id: i64) -> bool {
+    match get_bot_data(bot_id) {
+        None => false,
+        Some(b) => (*b.flags & flags::PREMIUM) != 0
+    }
 }
 
 #[inline]

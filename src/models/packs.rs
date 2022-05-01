@@ -151,11 +151,6 @@ pub fn get_pack_likes(pack_id: i64) -> u64 {
 }
 
 #[inline]
-pub fn get_pack_premium(_pack_id: i64) -> bool {
-    false
-}
-
-#[inline]
 pub fn get_pack_trending_score(_pack_id: i64) -> f64 {
     0.0
 }

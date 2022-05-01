@@ -44,9 +44,6 @@ pub enum PacksSortBy {
 
     /// How many bots the pack is in.
     NumBots,
-
-    /// Premium Packs.
-    Premium,
 }
 
 impl Default for PacksSortBy {
@@ -185,15 +182,6 @@ fn search_docs(
             id_field,
             collector,
             packs::get_pack_bot_count,
-            order,
-        ),
-        PacksSortBy::Premium => super::execute_search(
-            searcher,
-            query,
-            results,
-            id_field,
-            collector,
-            packs::get_pack_premium,
             order,
         ),
         PacksSortBy::Trending => super::execute_search(
