@@ -168,20 +168,15 @@ where
         }
     }
 
-    info!("COmpletes!");
-
     let (count, dist) = super::search_aggregate(
         query.as_deref(),
         TAGS_FIELD.to_string(),
         search_fields,
         searcher,
     )?;
-    info!("ahgghg2");
 
     let docs = result_addresses.into_iter().skip(offset);
     let loaded = extract_search_data(searcher, ctx.id_field, docs)?;
-
-    info!("ahgghg");
 
     Ok((count, dist, loaded))
 }
