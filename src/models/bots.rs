@@ -63,7 +63,7 @@ pub struct Bot {
     pub permissions: JsSafeBigInt,
 
     /// The bot's associated tags.
-    pub tags: Vec<String>,  // We have pre validated this on the backend.
+    pub tags: Vec<String>, // We have pre validated this on the backend.
 
     /// The timestamp that the bot was first created on.
     pub created_on: Timestamp,
