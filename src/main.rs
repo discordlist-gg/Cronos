@@ -63,6 +63,10 @@ pub struct Config {
 
     #[clap(long, env, default_value_t = 50)]
     max_concurrency: usize,
+
+    #[clap(short, long, env, default_value = "http://127.0.0.1:7700/v0")]
+    /// The exposed address of the server.
+    exposed_address: String,
 }
 
 #[tokio::main]
@@ -111,7 +115,7 @@ async fn main() -> Result<()> {
         env!("CARGO_PKG_VERSION"),
     )
     .description("The Dlist api system.")
-    .server(format!("http://{}/v0", &args.bind));
+    .server(args.exposed_address);
 
     let ui = api_service.redoc();
     let spec = api_service.spec();
