@@ -41,7 +41,7 @@ pub struct Pack {
     pub tag: String,
 
     /// The bots that this pack contains. (In the form of IDs)
-    pub bots: Vec<JsSafeBigInt>,
+    pub bots: Set<JsSafeBigInt>,
 
     /// If true the pack is removed from any public viewing.
     ///
@@ -90,7 +90,7 @@ pub fn vote_stats(id: i64) -> VoteStats {
 
 pub async fn refresh_latest_votes() -> Result<()> {
     let iter = session()
-        .query_iter("SELECT id, votes FROM pack_votes;", &[])
+        .query_iter("SELECT id, likes FROM pack_likes;", &[])
         .await?;
 
     VOTE_INFO.store(Arc::new(process_rows(iter).await));

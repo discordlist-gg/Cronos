@@ -43,10 +43,9 @@ CREATE TABLE IF NOT EXISTS packs (
     co_owner_ids set<bigint>,
     PRIMARY KEY ( id )
 );
-CREATE TABLE IF NOT EXISTS pack_votes (
+CREATE TABLE IF NOT EXISTS pack_likes (
     id bigint,
-    votes counter,
-    all_time_votes counter,
+    likes counter,
     PRIMARY KEY ( id )
 );
 CREATE TABLE IF NOT EXISTS pack_tags (

@@ -8,7 +8,7 @@ use poem_openapi::{Object, OpenApi};
 use tantivy::schema::Field;
 use tantivy::Document;
 
-use crate::models::bots::{get_bot_data, Bot};
+use crate::models::bots::{get_bot_data, Bot, get_bot_votes};
 use crate::routes::StandardResponse;
 use crate::search::readers::bots::{BotFilter, BotsSortBy};
 use crate::search::readers::Order;
@@ -61,6 +61,9 @@ pub struct BotHit {
     /// The short description of the bot.
     pub brief_description: String,
 
+    /// The number of votes the bot currently has this month.
+    pub votes: JsSafeBigInt,
+
     /// The invite url of the bot.
     pub invite_url: String,
 }
@@ -82,6 +85,7 @@ impl From<Bot> for BotHit {
             co_owner_ids: bot.co_owner_ids,
             guild_count: bot.guild_count,
             brief_description: bot.brief_description,
+            votes: JsSafeBigInt::from(get_bot_votes(*bot.id) as i64),
             invite_url: format!(
                 "https://discord.com/oauth2/authorize\
                 ?client_id={}\
