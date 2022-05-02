@@ -90,13 +90,16 @@ where
     let docs = match filter {
         None => searcher.search(&query, &collector),
         Some((field, pred)) => {
-            info!("filtering???");
             let filter = FilterCollector::new(field, pred, collector);
             searcher.search(&query, &filter)
         },
     }?;
 
-    results.extend(docs.into_iter().map(|v| v.1));
+    for (_, addr) in docs {
+        if !results.contains(&addr) {
+            results.push(addr);
+        }
+    }
 
     Ok(())
 }
@@ -132,7 +135,11 @@ where
         },
     }?;
 
-    results.extend(docs.into_iter().map(|v| v.1));
+    for (_, addr) in docs {
+        if !results.contains(&addr) {
+            results.push(addr);
+        }
+    }
 
     Ok(())
 }
