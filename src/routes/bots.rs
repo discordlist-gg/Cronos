@@ -8,7 +8,7 @@ use poem_openapi::{Object, OpenApi};
 use tantivy::schema::Field;
 use tantivy::Document;
 
-use crate::models::bots::{get_bot_data, Bot, get_bot_votes};
+use crate::models::bots::{get_bot_data, get_bot_votes, Bot};
 use crate::routes::StandardResponse;
 use crate::search::readers::bots::{BotFilter, BotsSortBy};
 use crate::search::readers::Order;
