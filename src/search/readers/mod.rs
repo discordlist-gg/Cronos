@@ -78,11 +78,10 @@ pub(crate) fn execute_basic_search(
             filter_down_addresses(docs, results);
         },
         Order::Asc => {
-            let collector = collector.tweak_score(move |_segment_reader: &SegmentReader| {
-                move |_doc: DocId, original_score: Score| {
-                    Reverse(original_score)
-                }
-            });
+            let collector =
+                collector.tweak_score(move |_segment_reader: &SegmentReader| {
+                    move |_doc: DocId, original_score: Score| Reverse(original_score)
+                });
 
             let docs = apply_filter_and_collect(searcher, query, collector, filter)?;
             filter_down_addresses(docs, results);
@@ -211,7 +210,6 @@ fn search_aggregate(
     Ok((count, distributions))
 }
 
-
 fn apply_filter_and_collect<C>(
     searcher: &Searcher,
     query: Box<dyn Query>,
@@ -219,7 +217,7 @@ fn apply_filter_and_collect<C>(
     filter: Option<(Field, fn(u64) -> bool)>,
 ) -> anyhow::Result<<C as Collector>::Fruit>
 where
-    C: Collector + Send + Sync
+    C: Collector + Send + Sync,
 {
     let fruit = match filter {
         None => searcher.search(&query, &collector),
@@ -232,10 +230,7 @@ where
     Ok(fruit)
 }
 
-fn filter_down_addresses<L>(
-    docs: Vec<(L, DocAddress)>,
-    results: &mut Vec<DocAddress>
-) {
+fn filter_down_addresses<L>(docs: Vec<(L, DocAddress)>, results: &mut Vec<DocAddress>) {
     for (_, addr) in docs {
         if !results.contains(&addr) {
             results.push(addr);
