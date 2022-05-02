@@ -189,16 +189,9 @@ fn search_docs(
     let collector = TopDocs::with_limit(limit);
 
     match sort_by {
-        PacksSortBy::Relevance => {
-            super::execute_basic_search::<fn(u64) -> bool>(
-                searcher,
-                query,
-                results,
-                collector,
-                order,
-                None
-            )
-        },
+        PacksSortBy::Relevance => super::execute_basic_search::<fn(u64) -> bool>(
+            searcher, query, results, collector, order, None,
+        ),
         PacksSortBy::NumBots => super::execute_search::<_, fn(u64) -> bool>(
             searcher,
             query,

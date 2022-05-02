@@ -202,15 +202,11 @@ fn search_docs(
     features_filter: Option<u64>,
 ) -> Result<()> {
     let collector = TopDocs::with_limit(limit);
-    let filter = features_filter.map(|flags| (ctx.features_field, move |v| (v & flags) != 0));
+    let filter =
+        features_filter.map(|flags| (ctx.features_field, move |v| (v & flags) != 0));
     match sort_by {
         BotsSortBy::Relevance => super::execute_basic_search(
-            searcher,
-            query,
-            results,
-            collector,
-            order,
-            filter,
+            searcher, query, results, collector, order, filter,
         ),
         BotsSortBy::Popularity => super::execute_search(
             searcher,
@@ -285,7 +281,7 @@ fn apply_filter(
             Occur::Must,
             Box::new(TermQuery::new(
                 Term::from_field_u64(ctx.premium_field, premium as u64),
-                    IndexRecordOption::Basic,
+                IndexRecordOption::Basic,
             )),
         ));
     }

@@ -101,10 +101,7 @@ impl Bot {
         let tags_field = schema.get_field(TAGS_FIELD).unwrap();
 
         document.add_i64(id_field, *self.id);
-        document.add_u64(
-            premium_field,
-            ((*self.flags & PREMIUM) == 0) as u64,
-        );
+        document.add_u64(premium_field, ((*self.flags & PREMIUM) == 0) as u64);
         document.add_text(username_field, &self.username);
         document.add_text(description_field, &self.brief_description);
         document.add_u64(features_field, *self.features as u64);
