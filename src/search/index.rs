@@ -18,7 +18,7 @@ pub async fn open_or_create(
 
     let dir = MmapDirectory::open(path)?;
 
-    let index = if dir.exists(path).unwrap_or(false) {
+    let index = if tantivy::Index::exists(&dir)? {
         tantivy::Index::open(dir)
     } else {
         tantivy::Index::open_or_create(dir, schema)
