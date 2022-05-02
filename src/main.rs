@@ -141,7 +141,8 @@ async fn main() -> Result<()> {
                     Method::PUT,
                     Method::OPTIONS,
                 ])
-                .allow_credentials(true),
+                .allow_credentials(true)
+                .max_age(200),
         );
 
     Server::new(TcpListener::bind(args.bind))

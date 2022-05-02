@@ -11,7 +11,7 @@ use tantivy::aggregation::agg_req::{
 use tantivy::aggregation::agg_result::{AggregationResult, BucketResult};
 use tantivy::aggregation::bucket::TermsAggregation;
 use tantivy::aggregation::AggregationCollector;
-use tantivy::collector::{Count, FilterCollector, TopDocs};
+use tantivy::collector::{Collector, Count, FilterCollector, TopDocs};
 use tantivy::fastfield::FastFieldReader;
 use tantivy::query::Query;
 use tantivy::schema::Field;
@@ -64,6 +64,34 @@ where
     }
 }
 
+pub(crate) fn execute_basic_search(
+    searcher: &Searcher,
+    query: Box<dyn Query>,
+    results: &mut Vec<DocAddress>,
+    collector: TopDocs,
+    order: Order,
+    filter: Option<(Field, fn(u64) -> bool)>,
+) -> anyhow::Result<()> {
+    match order {
+        Order::Desc => {
+            let docs = apply_filter_and_collect(searcher, query, collector, filter)?;
+            filter_down_addresses(docs, results);
+        },
+        Order::Asc => {
+            let collector = collector.tweak_score(move |_segment_reader: &SegmentReader| {
+                move |_doc: DocId, original_score: Score| {
+                    Reverse(original_score)
+                }
+            });
+
+            let docs = apply_filter_and_collect(searcher, query, collector, filter)?;
+            filter_down_addresses(docs, results);
+        },
+    };
+
+    Ok(())
+}
+
 pub(crate) fn collector_for_id_desc<T>(
     searcher: &Searcher,
     query: Box<dyn Query>,
@@ -87,19 +115,8 @@ where
         }
     });
 
-    let docs = match filter {
-        None => searcher.search(&query, &collector),
-        Some((field, pred)) => {
-            let filter = FilterCollector::new(field, pred, collector);
-            searcher.search(&query, &filter)
-        },
-    }?;
-
-    for (_, addr) in docs {
-        if !results.contains(&addr) {
-            results.push(addr);
-        }
-    }
+    let docs = apply_filter_and_collect(searcher, query, collector, filter)?;
+    filter_down_addresses(docs, results);
 
     Ok(())
 }
@@ -127,19 +144,8 @@ where
         }
     });
 
-    let docs = match filter {
-        None => searcher.search(&query, &collector),
-        Some((field, pred)) => {
-            let filter = FilterCollector::new(field, pred, collector);
-            searcher.search(&query, &filter)
-        },
-    }?;
-
-    for (_, addr) in docs {
-        if !results.contains(&addr) {
-            results.push(addr);
-        }
-    }
+    let docs = apply_filter_and_collect(searcher, query, collector, filter)?;
+    filter_down_addresses(docs, results);
 
     Ok(())
 }
@@ -203,4 +209,36 @@ fn search_aggregate(
     }
 
     Ok((count, distributions))
+}
+
+
+fn apply_filter_and_collect<C>(
+    searcher: &Searcher,
+    query: Box<dyn Query>,
+    collector: C,
+    filter: Option<(Field, fn(u64) -> bool)>,
+) -> anyhow::Result<<C as Collector>::Fruit>
+where
+    C: Collector + Send + Sync
+{
+    let fruit = match filter {
+        None => searcher.search(&query, &collector),
+        Some((field, pred)) => {
+            let filter = FilterCollector::new(field, pred, collector);
+            searcher.search(&query, &filter)
+        },
+    }?;
+
+    Ok(fruit)
+}
+
+fn filter_down_addresses<L>(
+    docs: Vec<(L, DocAddress)>,
+    results: &mut Vec<DocAddress>
+) {
+    for (_, addr) in docs {
+        if !results.contains(&addr) {
+            results.push(addr);
+        }
+    }
 }

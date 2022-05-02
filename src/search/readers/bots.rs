@@ -193,11 +193,14 @@ fn search_docs(
     let collector = TopDocs::with_limit(limit);
 
     match sort_by {
-        BotsSortBy::Relevance => {
-            let docs = searcher.search(&query, &collector)?;
-            results.extend(docs.into_iter().map(|v| v.1));
-            Ok(())
-        },
+        BotsSortBy::Relevance => super::execute_basic_search(
+            searcher,
+            query,
+            results,
+            collector,
+            order,
+            None,
+        ),
         BotsSortBy::Popularity => super::execute_search(
             searcher,
             query,
