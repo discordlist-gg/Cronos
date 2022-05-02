@@ -190,9 +190,16 @@ fn search_docs(
 
     match sort_by {
         PacksSortBy::Relevance => {
-            super::execute_basic_search(searcher, query, results, collector, order, None)
+            super::execute_basic_search::<fn(u64) -> bool>(
+                searcher,
+                query,
+                results,
+                collector,
+                order,
+                None
+            )
         },
-        PacksSortBy::NumBots => super::execute_search(
+        PacksSortBy::NumBots => super::execute_search::<_, fn(u64) -> bool>(
             searcher,
             query,
             results,
@@ -202,7 +209,7 @@ fn search_docs(
             order,
             None,
         ),
-        PacksSortBy::Trending => super::execute_search(
+        PacksSortBy::Trending => super::execute_search::<_, fn(u64) -> bool>(
             searcher,
             query,
             results,
@@ -212,7 +219,7 @@ fn search_docs(
             order,
             None,
         ),
-        PacksSortBy::Likes => super::execute_search(
+        PacksSortBy::Likes => super::execute_search::<_, fn(u64) -> bool>(
             searcher,
             query,
             results,

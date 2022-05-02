@@ -56,6 +56,7 @@ impl BotIndex {
         let id_field = schema.get_field(ID_FIELD).unwrap();
         let premium_field = schema.get_field(PREMIUM_FIELD).unwrap();
         let tags_field = schema.get_field(TAGS_FIELD).unwrap();
+        let features_field = schema.get_field(FEATURES_FIELD).unwrap();
         let search_fields = vec![
             schema.get_field(USERNAME_FIELD).unwrap(),
             schema.get_field(DESCRIPTION_FIELD).unwrap(),
@@ -66,6 +67,7 @@ impl BotIndex {
             id_field,
             premium_field,
             tags_field,
+            features_field,
         };
 
         bots::init(ctx, search_fields, reader, limiter);

@@ -41,7 +41,7 @@ impl Default for Order {
 }
 
 #[allow(clippy::too_many_arguments)]
-pub(crate) fn execute_search<T>(
+pub(crate) fn execute_search<T, CB>(
     searcher: &Searcher,
     query: Box<dyn Query>,
     results: &mut Vec<DocAddress>,
@@ -49,10 +49,11 @@ pub(crate) fn execute_search<T>(
     collector: TopDocs,
     cb: fn(i64) -> T,
     order: Order,
-    filter: Option<(Field, fn(u64) -> bool)>,
+    filter: Option<(Field, CB)>,
 ) -> anyhow::Result<()>
 where
     T: PartialOrd + Clone + Send + Sync + 'static,
+    CB: Fn(u64) -> bool + Sync + Send + Clone + 'static,
 {
     match order {
         Order::Desc => {
@@ -64,14 +65,17 @@ where
     }
 }
 
-pub(crate) fn execute_basic_search(
+pub(crate) fn execute_basic_search<CB>(
     searcher: &Searcher,
     query: Box<dyn Query>,
     results: &mut Vec<DocAddress>,
     collector: TopDocs,
     order: Order,
-    filter: Option<(Field, fn(u64) -> bool)>,
-) -> anyhow::Result<()> {
+    filter: Option<(Field, CB)>,
+) -> anyhow::Result<()>
+where
+    CB: Fn(u64) -> bool + Sync + Send + Clone + 'static,
+{
     match order {
         Order::Desc => {
             let docs = apply_filter_and_collect(searcher, query, collector, filter)?;
@@ -91,17 +95,18 @@ pub(crate) fn execute_basic_search(
     Ok(())
 }
 
-pub(crate) fn collector_for_id_desc<T>(
+pub(crate) fn collector_for_id_desc<T, CB>(
     searcher: &Searcher,
     query: Box<dyn Query>,
     results: &mut Vec<DocAddress>,
     field: Field,
     collector: TopDocs,
     cb: fn(i64) -> T,
-    filter: Option<(Field, fn(u64) -> bool)>,
+    filter: Option<(Field, CB)>,
 ) -> anyhow::Result<()>
 where
     T: PartialOrd + Clone + Send + Sync + 'static,
+    CB: Fn(u64) -> bool + Sync + Send + Clone + 'static,
 {
     let collector = collector.tweak_score(move |segment_reader: &SegmentReader| {
         let reader = segment_reader.fast_fields().i64(field).unwrap();
@@ -120,17 +125,18 @@ where
     Ok(())
 }
 
-pub(crate) fn collector_for_id_asc<T>(
+pub(crate) fn collector_for_id_asc<T, CB>(
     searcher: &Searcher,
     query: Box<dyn Query>,
     results: &mut Vec<DocAddress>,
     field: Field,
     collector: TopDocs,
     cb: fn(i64) -> T,
-    filter: Option<(Field, fn(u64) -> bool)>,
+    filter: Option<(Field, CB)>,
 ) -> anyhow::Result<()>
 where
     T: PartialOrd + Clone + Send + Sync + 'static,
+    CB: Fn(u64) -> bool + Sync + Send + Clone + 'static,
 {
     let collector = collector.tweak_score(move |segment_reader: &SegmentReader| {
         let reader = segment_reader.fast_fields().i64(field).unwrap();
@@ -210,14 +216,15 @@ fn search_aggregate(
     Ok((count, distributions))
 }
 
-fn apply_filter_and_collect<C>(
+fn apply_filter_and_collect<C, CB>(
     searcher: &Searcher,
     query: Box<dyn Query>,
     collector: C,
-    filter: Option<(Field, fn(u64) -> bool)>,
+    filter: Option<(Field, CB)>,
 ) -> anyhow::Result<<C as Collector>::Fruit>
 where
     C: Collector + Send + Sync,
+    CB: Fn(u64) -> bool + Sync + Send + Clone + 'static,
 {
     let fruit = match filter {
         None => searcher.search(&query, &collector),

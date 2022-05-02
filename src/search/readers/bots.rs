@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::Result;
+use backend_common::types::JsSafeBigInt;
 use once_cell::sync::OnceCell;
 use poem_openapi::{Enum, Object};
 use tantivy::collector::TopDocs;
@@ -61,6 +62,12 @@ pub struct BotFilter {
     /// A set of tags to filter results by.
     #[oai(validator(max_items = 10, unique_items), default)]
     tags: Vec<String>,
+
+    /// The set of features to filter by.
+    features: Option<JsSafeBigInt>,
+
+    /// If the bot should be premium or not.
+    premium: Option<bool>,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -68,6 +75,7 @@ pub struct FieldContext {
     pub id_field: Field,
     pub premium_field: Field,
     pub tags_field: Field,
+    pub features_field: Field,
 }
 
 pub struct InnerReader {
@@ -149,9 +157,9 @@ where
     let query_stages =
         crate::search::queries::parse_query(query.as_deref(), search_fields);
     let mut result_addresses = vec![];
-
+    let features_filter = filter.features.map(|v| *v as u64);
     for stage in query_stages {
-        let stage = apply_filter(ctx.tags_field, &filter, stage);
+        let stage = apply_filter(ctx, &filter, stage);
 
         search_docs(
             ctx,
@@ -161,6 +169,7 @@ where
             limit + offset,
             sort_by,
             order,
+            features_filter,
         )?;
 
         if result_addresses.len() == (limit + offset) {
@@ -181,6 +190,7 @@ where
     Ok((count, dist, loaded))
 }
 
+#[allow(clippy::too_many_arguments)]
 fn search_docs(
     ctx: FieldContext,
     results: &mut Vec<DocAddress>,
@@ -189,13 +199,19 @@ fn search_docs(
     limit: usize,
     sort_by: BotsSortBy,
     order: Order,
+    features_filter: Option<u64>,
 ) -> Result<()> {
     let collector = TopDocs::with_limit(limit);
-
+    let filter = features_filter.map(|flags| (ctx.features_field, move |v| (v & flags) != 0));
     match sort_by {
-        BotsSortBy::Relevance => {
-            super::execute_basic_search(searcher, query, results, collector, order, None)
-        },
+        BotsSortBy::Relevance => super::execute_basic_search(
+            searcher,
+            query,
+            results,
+            collector,
+            order,
+            filter,
+        ),
         BotsSortBy::Popularity => super::execute_search(
             searcher,
             query,
@@ -204,7 +220,7 @@ fn search_docs(
             collector,
             bots::get_bot_guild_count,
             order,
-            None,
+            filter,
         ),
         BotsSortBy::Premium => super::execute_search(
             searcher,
@@ -214,7 +230,7 @@ fn search_docs(
             collector,
             bots::get_bot_premium,
             order,
-            Some((ctx.premium_field, |v| v == 1)),
+            filter,
         ),
         BotsSortBy::Trending => super::execute_search(
             searcher,
@@ -224,7 +240,7 @@ fn search_docs(
             collector,
             bots::get_bot_trending_score,
             order,
-            None,
+            filter,
         ),
         BotsSortBy::Votes => super::execute_search(
             searcher,
@@ -234,7 +250,7 @@ fn search_docs(
             collector,
             bots::get_bot_votes,
             order,
-            None,
+            filter,
         ),
     }?;
 
@@ -242,7 +258,7 @@ fn search_docs(
 }
 
 fn apply_filter(
-    tag_field: Field,
+    ctx: FieldContext,
     filter: &BotFilter,
     existing_query: Box<dyn Query>,
 ) -> Box<dyn Query> {
@@ -257,12 +273,22 @@ fn apply_filter(
             (
                 Occur::Must,
                 Box::new(TermQuery::new(
-                    Term::from_field_text(tag_field, v),
+                    Term::from_field_text(ctx.tags_field, v),
                     IndexRecordOption::Basic,
                 )) as Box<dyn Query>,
             )
         })
         .collect::<Vec<(Occur, Box<dyn Query>)>>();
+
+    if let Some(premium) = filter.premium {
+        parts.push((
+            Occur::Must,
+            Box::new(TermQuery::new(
+                Term::from_field_u64(ctx.premium_field, premium as u64),
+                    IndexRecordOption::Basic,
+            )),
+        ));
+    }
 
     parts.push((Occur::Must, existing_query));
 
