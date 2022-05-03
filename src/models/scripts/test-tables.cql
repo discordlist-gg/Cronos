@@ -48,7 +48,3 @@ CREATE TABLE IF NOT EXISTS pack_likes (
     likes counter,
     PRIMARY KEY ( id )
 );
-CREATE TABLE IF NOT EXISTS pack_tags (
-    name text,
-    PRIMARY KEY ( name )
-);
