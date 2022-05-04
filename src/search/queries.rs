@@ -1,4 +1,12 @@
-use tantivy::query::{AllQuery, BooleanQuery, BoostQuery, EmptyQuery, FuzzyTermQuery, Occur, Query};
+use tantivy::query::{
+    AllQuery,
+    BooleanQuery,
+    BoostQuery,
+    EmptyQuery,
+    FuzzyTermQuery,
+    Occur,
+    Query,
+};
 use tantivy::schema::Field;
 use tantivy::Term;
 
