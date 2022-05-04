@@ -19,6 +19,7 @@ use crate::search::index_impls::bots::{
     FEATURES_FIELD,
     ID_FIELD,
     PREMIUM_FIELD,
+    TAGS_AGG_FIELD,
     TAGS_FIELD,
     USERNAME_FIELD,
 };
@@ -99,6 +100,7 @@ impl Bot {
         let description_field = schema.get_field(DESCRIPTION_FIELD).unwrap();
         let features_field = schema.get_field(FEATURES_FIELD).unwrap();
         let tags_field = schema.get_field(TAGS_FIELD).unwrap();
+        let tags_agg_field = schema.get_field(TAGS_AGG_FIELD).unwrap();
 
         document.add_i64(id_field, *self.id);
         document.add_u64(premium_field, ((*self.flags & PREMIUM) == 0) as u64);
@@ -108,6 +110,7 @@ impl Bot {
 
         for tag in self.tags.iter() {
             document.add_text(tags_field, &tag);
+            document.add_text(tags_agg_field, &tag);
         }
 
         document

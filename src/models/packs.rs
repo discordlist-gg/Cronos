@@ -18,6 +18,7 @@ use crate::search::index_impls::packs::{
     DESCRIPTION_FIELD,
     ID_FIELD,
     NAME_FIELD,
+    TAG_AGG_FIELD,
     TAG_FIELD,
 };
 use crate::{derive_fetch_by_id, derive_fetch_iter};
@@ -70,11 +71,13 @@ impl Pack {
         let name_field = schema.get_field(NAME_FIELD).unwrap();
         let description_field = schema.get_field(DESCRIPTION_FIELD).unwrap();
         let tag_field = schema.get_field(TAG_FIELD).unwrap();
+        let tag_agg_field = schema.get_field(TAG_AGG_FIELD).unwrap();
 
         document.add_i64(id_field, *self.id);
         document.add_text(name_field, &self.name);
         document.add_text(description_field, &self.description);
         document.add_text(tag_field, &self.tag);
+        document.add_text(tag_agg_field, &self.tag);
 
         document
     }

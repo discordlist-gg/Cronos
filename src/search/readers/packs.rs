@@ -10,7 +10,7 @@ use tantivy::{DocAddress, IndexReader, Searcher, Term};
 use tokio::sync::{oneshot, Semaphore};
 
 use crate::models::packs;
-use crate::search::index_impls::packs::TAG_FIELD;
+use crate::search::index_impls::packs::TAG_AGG_FIELD;
 use crate::search::readers::{extract_search_data, Order, SearchResult};
 use crate::search::FromTantivyDoc;
 
@@ -166,7 +166,7 @@ where
 
     let (count, dist) = super::search_aggregate(
         query.as_deref(),
-        TAG_FIELD.to_string(),
+        TAG_AGG_FIELD.to_string(),
         search_fields,
         searcher,
     )?;
