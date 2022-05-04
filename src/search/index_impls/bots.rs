@@ -3,7 +3,18 @@ use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
 use once_cell::sync::OnceCell;
-use tantivy::schema::{Field, Schema, SchemaBuilder, FAST, INDEXED, STORED, TEXT};
+use tantivy::schema::{
+    Field,
+    IndexRecordOption,
+    Schema,
+    SchemaBuilder,
+    TextFieldIndexing,
+    TextOptions,
+    FAST,
+    INDEXED,
+    STORED,
+    TEXT,
+};
 use tantivy::Term;
 use tokio::sync::Semaphore;
 
@@ -20,6 +31,7 @@ pub static FEATURES_FIELD: &str = "features";
 pub static USERNAME_FIELD: &str = "username";
 pub static DESCRIPTION_FIELD: &str = "brief_description";
 pub static TAGS_FIELD: &str = "tags";
+pub static TAGS_AGG_FIELD: &str = "tags_agg";
 
 static BOT_INDEX: OnceCell<BotIndex> = OnceCell::new();
 
@@ -57,6 +69,7 @@ impl BotIndex {
         let premium_field = schema.get_field(PREMIUM_FIELD).unwrap();
         let tags_field = schema.get_field(TAGS_FIELD).unwrap();
         let features_field = schema.get_field(FEATURES_FIELD).unwrap();
+        let tags_agg_field = schema.get_field(TAGS_AGG_FIELD).unwrap();
         let search_fields = vec![
             schema.get_field(USERNAME_FIELD).unwrap(),
             schema.get_field(DESCRIPTION_FIELD).unwrap(),
@@ -66,7 +79,7 @@ impl BotIndex {
         let ctx = FieldContext {
             id_field,
             premium_field,
-            tags_field,
+            tags_agg_field,
             features_field,
         };
 
@@ -124,6 +137,14 @@ fn default_schema() -> Schema {
     builder.add_text_field(USERNAME_FIELD, TEXT);
     builder.add_text_field(DESCRIPTION_FIELD, TEXT);
     builder.add_text_field(TAGS_FIELD, TEXT | FAST);
+    builder.add_text_field(
+        TAGS_AGG_FIELD,
+        TextOptions::default().set_fast().set_indexing_options(
+            TextFieldIndexing::default()
+                .set_index_option(IndexRecordOption::Basic)
+                .set_tokenizer("raw"),
+        ),
+    );
 
     builder.build()
 }

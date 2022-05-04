@@ -63,7 +63,7 @@ pub struct PackFilter {
 #[derive(Debug, Copy, Clone)]
 pub struct FieldContext {
     pub id_field: Field,
-    pub tag_field: Field,
+    pub tag_agg_field: Field,
 }
 
 pub struct InnerReader {
@@ -147,7 +147,7 @@ where
     let mut result_addresses = vec![];
 
     for stage in query_stages {
-        let stage = apply_filter(ctx.tag_field, &filter, stage);
+        let stage = apply_filter(ctx.tag_agg_field, &filter, stage);
 
         search_docs(
             ctx,

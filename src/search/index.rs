@@ -4,7 +4,8 @@ use std::path::Path;
 use anyhow::Result;
 use tantivy::directory::MmapDirectory;
 use tantivy::schema::Schema;
-use tantivy::{Directory, IndexReader, ReloadPolicy};
+use tantivy::tokenizer::RawTokenizer;
+use tantivy::{IndexReader, ReloadPolicy};
 
 use crate::search::tokenizer::SimpleUnicodeTokenizer;
 use crate::search::writer::Writer;
@@ -27,6 +28,8 @@ pub async fn open_or_create(
     index
         .tokenizers()
         .register("default", SimpleUnicodeTokenizer::default());
+
+    index.tokenizers().register("raw", RawTokenizer);
 
     let reader = index
         .reader_builder()

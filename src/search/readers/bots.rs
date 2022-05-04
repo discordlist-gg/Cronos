@@ -74,7 +74,7 @@ pub struct BotFilter {
 pub struct FieldContext {
     pub id_field: Field,
     pub premium_field: Field,
-    pub tags_field: Field,
+    pub tags_agg_field: Field,
     pub features_field: Field,
 }
 
@@ -269,7 +269,7 @@ fn apply_filter(
             (
                 Occur::Must,
                 Box::new(TermQuery::new(
-                    Term::from_field_text(ctx.tags_field, v),
+                    Term::from_field_text(ctx.tags_agg_field, v),
                     IndexRecordOption::Basic,
                 )) as Box<dyn Query>,
             )

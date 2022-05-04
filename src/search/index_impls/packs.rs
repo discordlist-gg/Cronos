@@ -3,7 +3,18 @@ use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
 use once_cell::sync::OnceCell;
-use tantivy::schema::{Field, Schema, SchemaBuilder, FAST, INDEXED, STORED, TEXT};
+use tantivy::schema::{
+    Field,
+    IndexRecordOption,
+    Schema,
+    SchemaBuilder,
+    TextFieldIndexing,
+    TextOptions,
+    FAST,
+    INDEXED,
+    STORED,
+    TEXT,
+};
 use tantivy::Term;
 use tokio::sync::Semaphore;
 
@@ -18,6 +29,7 @@ pub static ID_FIELD: &str = "id";
 pub static NAME_FIELD: &str = "name";
 pub static DESCRIPTION_FIELD: &str = "description";
 pub static TAG_FIELD: &str = "tag";
+pub static TAG_AGG_FIELD: &str = "tag_agg";
 
 static PACK_INDEX: OnceCell<PackIndex> = OnceCell::new();
 
@@ -53,6 +65,7 @@ impl PackIndex {
 
         let id_field = schema.get_field(ID_FIELD).unwrap();
         let tag_field = schema.get_field(TAG_FIELD).unwrap();
+        let tag_agg_field = schema.get_field(TAG_AGG_FIELD).unwrap();
         let search_fields = vec![
             schema.get_field(NAME_FIELD).unwrap(),
             schema.get_field(DESCRIPTION_FIELD).unwrap(),
@@ -61,7 +74,7 @@ impl PackIndex {
 
         let ctx = FieldContext {
             id_field,
-            tag_field,
+            tag_agg_field,
         };
 
         packs::init(ctx, search_fields, reader, limiter);
@@ -116,6 +129,14 @@ fn default_schema() -> Schema {
     builder.add_text_field(NAME_FIELD, TEXT);
     builder.add_text_field(DESCRIPTION_FIELD, TEXT);
     builder.add_text_field(TAG_FIELD, TEXT | FAST);
+    builder.add_text_field(
+        TAG_AGG_FIELD,
+        TextOptions::default().set_fast().set_indexing_options(
+            TextFieldIndexing::default()
+                .set_index_option(IndexRecordOption::Basic)
+                .set_tokenizer("raw"),
+        ),
+    );
 
     builder.build()
 }
