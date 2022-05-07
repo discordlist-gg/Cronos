@@ -7,7 +7,7 @@ use tantivy::{Document, Index, IndexWriter, Term};
 use tokio::sync::oneshot;
 
 const MEMORY_ARENA: usize = 300 << 20;
-const AUTO_COMMIT_SECS: u64 = 15;
+const AUTO_COMMIT_SECS: u64 = 5;
 
 pub async fn start_writer(index: Index) -> Result<Writer> {
     let (tx, rx) = flume::bounded(4);
