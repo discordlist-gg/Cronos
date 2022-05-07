@@ -100,8 +100,9 @@ impl PackIndex {
             .await?
             .ok_or_else(|| anyhow!("Bot does not exist!"))?;
 
+        let term = Term::from_field_i64(self.id_field, pack_id);
         let doc = pack.as_tantivy_doc(&self.schema);
-        self.writer.add_document(doc).await?;
+        self.writer.add_and_replace_document(term, doc).await?;
 
         update_live_data(pack);
 

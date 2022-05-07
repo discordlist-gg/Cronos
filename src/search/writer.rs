@@ -45,6 +45,15 @@ impl Writer {
             .map_err(|_| anyhow!("Writer actor has shutdown."))
     }
 
+    pub async fn add_and_replace_document(
+        &self,
+        term: Term,
+        doc: Document,
+    ) -> Result<()> {
+        self.send_op(WriterOp::AddAndReplaceDocument(term, doc))
+            .await
+    }
+
     pub async fn add_document(&self, doc: Document) -> Result<()> {
         self.send_op(WriterOp::AddDocument(doc)).await
     }
@@ -59,6 +68,7 @@ impl Writer {
 }
 
 enum WriterOp {
+    AddAndReplaceDocument(Term, Document),
     AddDocument(Document),
     RemoveDocuments(Term),
     ClearAll,
@@ -112,6 +122,11 @@ fn handle_message(op: WriterOp, writer: &mut IndexWriter) -> anyhow::Result<()> 
     match op {
         WriterOp::__Ping(waker) => {
             let _ = waker.send(());
+        },
+        WriterOp::AddAndReplaceDocument(term, doc) => {
+            debug!("Adding document: {:?}", doc);
+            writer.delete_term(term);
+            writer.add_document(doc)?;
         },
         WriterOp::AddDocument(doc) => {
             debug!("Adding document: {:?}", doc);
