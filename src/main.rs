@@ -191,7 +191,7 @@ async fn global_ratelimiter<E: Endpoint>(
         } else if let Some(q) = limit_per_hour {
             q
         } else {
-            Quota::per_minute(NonZeroU32::new(120).unwrap())
+            Quota::per_minute(NonZeroU32::new(60).unwrap())
         };
 
         governor::RateLimiter::keyed(
