@@ -40,9 +40,6 @@ pub struct BotHit {
     /// This is stored in the form of a bitflag(s).
     pub features: JsSafeBigInt,
 
-    /// The bot's required invite permissions.
-    pub permissions: JsSafeBigInt,
-
     /// The bot's associated tags.
     pub tags: Vec<String>,
 
@@ -78,7 +75,6 @@ impl From<Bot> for BotHit {
             prefix: bot.prefix,
             flags: bot.features,
             features: bot.features,
-            permissions: bot.permissions,
             tags: bot.tags,
             created_on: bot.created_on,
             owner_id: bot.owner_id,
@@ -86,13 +82,7 @@ impl From<Bot> for BotHit {
             guild_count: bot.guild_count,
             brief_description: bot.brief_description,
             votes: JsSafeBigInt::from(get_bot_votes(*bot.id) as i64),
-            invite_url: format!(
-                "https://discord.com/oauth2/authorize\
-                ?client_id={}\
-                &permissions={}\
-                &scope=bot%20applications.commands",
-                bot.id, bot.permissions,
-            ),
+            invite_url: bot.invite_url,
         }
     }
 }
