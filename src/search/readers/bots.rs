@@ -177,12 +177,15 @@ where
         }
     }
 
-    let (count, dist) = super::search_aggregate(
-        query.as_deref(),
-        TAGS_AGG_FIELD.to_string(),
-        search_fields,
-        searcher,
-    )?;
+    let query =
+        crate::search::queries::distribution_query(query.as_deref(), search_fields);
+    let query = apply_filter(ctx, &filter, query);
+
+    let filter =
+        features_filter.map(|flags| (ctx.features_field, move |v| (v & flags) != 0));
+
+    let (count, dist) =
+        super::search_aggregate(query, TAGS_AGG_FIELD.to_string(), searcher, filter)?;
 
     let docs = result_addresses.into_iter().skip(offset);
     let loaded = extract_search_data(searcher, ctx.id_field, docs)?;

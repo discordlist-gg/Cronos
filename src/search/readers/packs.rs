@@ -164,11 +164,14 @@ where
         }
     }
 
-    let (count, dist) = super::search_aggregate(
-        query.as_deref(),
+    let query =
+        crate::search::queries::distribution_query(query.as_deref(), search_fields);
+    let query = apply_filter(ctx.tag_agg_field, &filter, query);
+    let (count, dist) = super::search_aggregate::<fn(u64) -> bool>(
+        query,
         TAG_AGG_FIELD.to_string(),
-        search_fields,
         searcher,
+        None,
     )?;
 
     let docs = result_addresses.into_iter().skip(offset);

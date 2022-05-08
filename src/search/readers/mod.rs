@@ -174,14 +174,15 @@ where
     Ok(loaded)
 }
 
-fn search_aggregate(
-    query: Option<&str>,
+fn search_aggregate<CB>(
+    query: Box<dyn Query>,
     field_name: String,
-    fields: &[Field],
     searcher: &Searcher,
-) -> anyhow::Result<(usize, HashMap<String, usize>)> {
-    let distribution_query = crate::search::queries::distribution_query(query, fields);
-
+    filter_field: Option<(Field, CB)>,
+) -> anyhow::Result<(usize, HashMap<String, usize>)>
+where
+    CB: Fn(u64) -> bool + Sync + Send + Clone + 'static,
+{
     let terms = TermsAggregation {
         field: field_name,
         size: Some(1000),
@@ -199,7 +200,12 @@ fn search_aggregate(
     .collect();
     let collector = AggregationCollector::from_aggs(aggs);
 
-    let (count, terms) = searcher.search(&distribution_query, &(Count, collector))?;
+    let (count, terms) = if let Some((field, cb)) = filter_field {
+        let collector = FilterCollector::new(field, cb, (Count, collector));
+        searcher.search(&query, &collector)?
+    } else {
+        searcher.search(&query, &(Count, collector))?
+    };
 
     let (_, first_agg) = terms.0.into_iter().next().unwrap();
     let mut distributions = HashMap::new();
