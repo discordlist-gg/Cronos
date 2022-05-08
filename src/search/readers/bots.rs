@@ -289,7 +289,8 @@ fn apply_filter(
         ));
     }
 
-    parts.push((Occur::Must, existing_query));
-
-    Box::new(BooleanQuery::new(parts))
+    Box::new(BooleanQuery::new(vec![
+        (Occur::Must, existing_query),
+        (Occur::Must, Box::new(BooleanQuery::new(parts))),
+    ]))
 }

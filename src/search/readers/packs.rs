@@ -252,7 +252,9 @@ fn apply_filter(
     if parts.is_empty() {
         existing_query
     } else {
-        parts.push((Occur::Must, existing_query));
-        Box::new(BooleanQuery::new(parts))
+        Box::new(BooleanQuery::new(vec![
+            (Occur::Must, existing_query),
+            (Occur::Must, Box::new(BooleanQuery::new(parts))),
+        ]))
     }
 }
