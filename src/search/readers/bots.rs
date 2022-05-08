@@ -270,7 +270,7 @@ fn apply_filter(
         .iter()
         .map(|v| {
             (
-                Occur::Must,
+                Occur::Should,
                 Box::new(TermQuery::new(
                     Term::from_field_text(ctx.tags_agg_field, v),
                     IndexRecordOption::Basic,

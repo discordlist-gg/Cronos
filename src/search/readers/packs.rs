@@ -56,8 +56,8 @@ impl Default for PacksSortBy {
 #[derive(Default, Debug, Object)]
 pub struct PackFilter {
     /// A specific category to filter out results.
-    #[oai(validator(min_length = 2, max_length = 32))]
-    category: Option<String>,
+    #[oai(validator(max_items = 10, unique_items), default)]
+    categories: Vec<String>,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -235,21 +235,24 @@ fn apply_filter(
     filter: &PackFilter,
     existing_query: Box<dyn Query>,
 ) -> Box<dyn Query> {
-    let parts = filter.category.as_ref().map(|v| {
-        (
-            Occur::Must,
-            Box::new(TermQuery::new(
-                Term::from_field_text(tag_field, v),
-                IndexRecordOption::Basic,
-            )) as Box<dyn Query>,
-        )
-    });
+    let mut parts = filter
+        .categories
+        .iter()
+        .map(|v| {
+            (
+                Occur::Should,
+                Box::new(TermQuery::new(
+                    Term::from_field_text(tag_field, v),
+                    IndexRecordOption::Basic,
+                )) as Box<dyn Query>,
+            )
+        })
+        .collect::<Vec<_>>();
 
-    match parts {
-        None => existing_query,
-        Some(parts) => Box::new(BooleanQuery::new(vec![
-            parts,
-            (Occur::Must, existing_query),
-        ])),
+    if parts.is_empty() {
+        existing_query
+    } else {
+        parts.push((Occur::Must, existing_query));
+        Box::new(BooleanQuery::new(parts))
     }
 }
