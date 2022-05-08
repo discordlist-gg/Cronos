@@ -60,8 +60,8 @@ pub struct Bot {
     /// This is stored in the form of a bitflag(s).
     pub features: JsSafeBigInt,
 
-    /// The bot's required invite permissions.
-    pub permissions: JsSafeBigInt,
+    /// The bot's invite url.
+    pub invite_url: String,
 
     /// The bot's associated tags.
     pub tags: Vec<String>, // We have pre validated this on the backend.

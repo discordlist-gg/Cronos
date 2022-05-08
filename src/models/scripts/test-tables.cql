@@ -8,8 +8,8 @@ CREATE TABLE IF NOT EXISTS bots (
     slug text,
     flags bigint,
     features bigint,
-    permissions bigint,
     tags set<text>,
+    invite_url text,
     created_on timestamp,
     is_hidden boolean,
     is_forced_into_hiding boolean,
@@ -24,11 +24,6 @@ CREATE TABLE IF NOT EXISTS bot_votes (
     votes counter,
     all_time_votes counter,
     PRIMARY KEY ( id )
-);
-CREATE TABLE IF NOT EXISTS bot_tags (
-    name text,
-    category text,
-    PRIMARY KEY ( name )
 );
 CREATE TABLE IF NOT EXISTS packs (
     id bigint,
