@@ -35,7 +35,7 @@ pub fn init(
 #[oai(rename_all = "lowercase")]
 pub enum PacksSortBy {
     /// Sort by relevance.
-    Relevancy,
+    Relevance,
 
     /// Sort by votes.
     Votes,
@@ -49,7 +49,7 @@ pub enum PacksSortBy {
 
 impl Default for PacksSortBy {
     fn default() -> Self {
-        Self::Relevancy
+        Self::Relevance
     }
 }
 
@@ -192,7 +192,7 @@ fn search_docs(
     let collector = TopDocs::with_limit(limit);
 
     match sort_by {
-        PacksSortBy::Relevancy => super::execute_basic_search::<fn(u64) -> bool>(
+        PacksSortBy::Relevance => super::execute_basic_search::<fn(u64) -> bool>(
             searcher, query, results, collector, order, None,
         ),
         PacksSortBy::NumBots => super::execute_search::<_, fn(u64) -> bool>(

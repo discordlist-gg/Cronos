@@ -36,7 +36,7 @@ pub fn init(
 #[oai(rename_all = "lowercase")]
 pub enum BotsSortBy {
     /// Sort by relevance.
-    Relevancy,
+    Relevance,
 
     /// Sort by votes.
     Votes,
@@ -53,7 +53,7 @@ pub enum BotsSortBy {
 
 impl Default for BotsSortBy {
     fn default() -> Self {
-        Self::Relevancy
+        Self::Relevance
     }
 }
 
@@ -208,7 +208,7 @@ fn search_docs(
     let filter =
         features_filter.map(|flags| (ctx.features_field, move |v| (v & flags) != 0));
     match sort_by {
-        BotsSortBy::Relevancy => super::execute_basic_search(
+        BotsSortBy::Relevance => super::execute_basic_search(
             searcher, query, results, collector, order, filter,
         ),
         BotsSortBy::Popularity => super::execute_search(
