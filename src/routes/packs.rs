@@ -94,7 +94,7 @@ pub struct PackSearchPayload {
 
     /// How to sort results.
     #[oai(default)]
-    sort_by: PacksSortBy,
+    sort: PacksSortBy,
 
     /// Order results Asc or Desc.
     #[oai(default)]
@@ -175,7 +175,7 @@ impl PackApi {
                 payload.0.filter,
                 limit,
                 offset,
-                payload.0.sort_by,
+                payload.0.sort,
                 payload.0.order,
             )
             .await?;

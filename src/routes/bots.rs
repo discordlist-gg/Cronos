@@ -121,7 +121,7 @@ pub struct BotSearchPayload {
 
     /// How to sort results.
     #[oai(default)]
-    sort_by: BotsSortBy,
+    sort: BotsSortBy,
 
     /// Order results Asc or Desc.
     #[oai(default)]
@@ -198,7 +198,7 @@ impl BotApi {
                 payload.0.filter,
                 limit,
                 offset,
-                payload.0.sort_by,
+                payload.0.sort,
                 payload.0.order,
             )
             .await?;
