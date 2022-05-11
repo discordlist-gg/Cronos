@@ -41,6 +41,9 @@ pub enum BotsSortBy {
     /// Sort by votes.
     Votes,
 
+    /// Sort by age.
+    Age,
+
     /// Sort by the trending score.
     Trending,
 
@@ -248,6 +251,16 @@ fn search_docs(
             ctx.id_field,
             collector,
             bots::get_bot_votes,
+            order,
+            filter,
+        ),
+        BotsSortBy::Age => super::execute_search(
+            searcher,
+            query,
+            results,
+            ctx.id_field,
+            collector,
+            bots::get_bot_age,
             order,
             filter,
         ),

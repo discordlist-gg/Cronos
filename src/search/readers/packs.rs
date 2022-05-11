@@ -40,6 +40,9 @@ pub enum PacksSortBy {
     /// Sort by votes.
     Votes,
 
+    /// Sort by age.
+    Age,
+
     /// Sort by the trending score.
     Trending,
 
@@ -222,6 +225,16 @@ fn search_docs(
             ctx.id_field,
             collector,
             packs::get_pack_likes,
+            order,
+            None,
+        ),
+        PacksSortBy::Age => super::execute_search::<_, fn(u64) -> bool>(
+            searcher,
+            query,
+            results,
+            ctx.id_field,
+            collector,
+            packs::get_pack_age,
             order,
             None,
         ),

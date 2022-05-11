@@ -196,6 +196,13 @@ pub fn get_bot_trending_score(_bot_id: i64) -> f64 {
 }
 
 #[inline]
+pub fn get_bot_age(bot_id: i64) -> i64 {
+    get_bot_data(bot_id)
+        .map(|v| v.created_on.timestamp())
+        .unwrap_or_default()
+}
+
+#[inline]
 pub fn get_bot_guild_count(bot_id: i64) -> u64 {
     get_bot_data(bot_id)
         .map(|b| *b.guild_count.unwrap_or_default() as u64)
