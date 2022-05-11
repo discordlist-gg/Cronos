@@ -155,6 +155,13 @@ pub fn get_pack_trending_score(_pack_id: i64) -> f64 {
 }
 
 #[inline]
+pub fn get_pack_age(pack_id: i64) -> i64 {
+    get_pack_data(pack_id)
+        .map(|v| v.created_on.timestamp())
+        .unwrap_or_default()
+}
+
+#[inline]
 pub fn get_pack_bot_count(pack_id: i64) -> u64 {
     get_pack_data(pack_id)
         .map(|p| p.bots.len() as u64)
