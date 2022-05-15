@@ -248,7 +248,7 @@ fn apply_filter(
     filter: &PackFilter,
     existing_query: Box<dyn Query>,
 ) -> Box<dyn Query> {
-    let mut parts = filter
+    let parts = filter
         .categories
         .iter()
         .map(|v| {

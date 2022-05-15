@@ -185,7 +185,7 @@ where
     let query = apply_filter(ctx, &filter, query);
 
     let filter =
-        features_filter.map(|flags| (ctx.features_field, move |v| (v & flags) != 0));
+        features_filter.map(|flags| (ctx.features_field, move |v| (v & flags) == flags));
 
     let (count, dist) =
         super::search_aggregate(query, TAGS_AGG_FIELD.to_string(), searcher, filter)?;
