@@ -9,7 +9,7 @@ use tantivy::schema::Field;
 use tantivy::Document;
 
 use crate::models::bots::get_bot_data;
-use crate::models::packs::get_pack_data;
+use crate::models::packs::{get_pack_data, get_pack_likes};
 use crate::routes::bots::BotHit;
 use crate::routes::StandardResponse;
 use crate::search::readers::packs::{PackFilter, PacksSortBy};
@@ -42,11 +42,15 @@ pub struct PackHit {
 
     /// The set of co-owners of this pack.
     pub co_owner_ids: Set<JsSafeBigInt>,
+
+    /// The number of likes the pack has.
+    pub likes: JsSafeBigInt,
 }
 
 impl FromTantivyDoc for PackHit {
     fn from_doc(id_field: Field, doc: Document) -> Option<Self> {
         let id = doc.get_first(id_field)?.as_i64()?;
+        let likes = get_pack_likes(id);
         let pack = get_pack_data(id)?;
         let bots = pack
             .bots
@@ -65,6 +69,7 @@ impl FromTantivyDoc for PackHit {
             description: pack.description,
             tag: pack.tag,
             bots,
+            likes: JsSafeBigInt::from(likes as i64),
         })
     }
 }
