@@ -182,7 +182,17 @@ where
 
     let query =
         crate::search::queries::distribution_query(query.as_deref(), search_fields);
-    let query = apply_filter(ctx, &filter, query);
+    let query = if let Some(premium) = filter.premium {
+        Box::new(BooleanQuery::new(vec![
+            (Occur::Must, query),
+            (Occur::Must, Box::new(TermQuery::new(
+                Term::from_field_u64(ctx.premium_field, premium as u64),
+                IndexRecordOption::Basic,
+            )))
+        ]))
+    } else {
+        query
+    };
 
     let filter =
         features_filter.map(|flags| (ctx.features_field, move |v| (v & flags) == flags));
@@ -274,10 +284,6 @@ fn apply_filter(
     filter: &BotFilter,
     existing_query: Box<dyn Query>,
 ) -> Box<dyn Query> {
-    if filter.tags.is_empty() {
-        return existing_query;
-    }
-
     let mut parts = filter
         .tags
         .iter()
@@ -302,8 +308,12 @@ fn apply_filter(
         ));
     }
 
-    Box::new(BooleanQuery::new(vec![
-        (Occur::Must, existing_query),
-        (Occur::Must, Box::new(BooleanQuery::new(parts))),
-    ]))
+    if parts.is_empty() {
+        existing_query
+    } else {
+        Box::new(BooleanQuery::new(vec![
+            (Occur::Must, existing_query),
+            (Occur::Must, Box::new(BooleanQuery::new(parts))),
+        ]))
+    }
 }
