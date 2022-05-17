@@ -31,6 +31,7 @@ pub struct PackHit {
     /// The timestamp of when the pack was created.
     pub created_on: Timestamp,
 
+    #[oai(rename = "category")]
     /// The tag associated with this pack.
     pub tag: String,
 
