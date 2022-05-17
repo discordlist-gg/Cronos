@@ -144,6 +144,14 @@ pub fn get_bot_data(id: i64) -> Option<Bot> {
 }
 
 #[inline]
+pub fn is_hidden(id: i64) -> bool {
+    let txn = LIVE_DATA.read();
+    txn.get(&id)
+        .map(|v| !v.is_packable || v.is_hidden || v.is_forced_into_hiding)
+        .unwrap_or_default()
+}
+
+#[inline]
 pub fn remove_bot_from_live(bot_id: i64) {
     let mut txn = LIVE_DATA.write();
     txn.remove(&bot_id);

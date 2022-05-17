@@ -21,6 +21,7 @@ use crate::search::index_impls::packs::{
     TAG_FIELD,
 };
 use crate::{derive_fetch_by_id, derive_fetch_iter};
+use crate::models::bots::{get_bot_data, is_hidden};
 
 #[derive(FromRow, FieldNamesAsArray, Debug, Clone)]
 pub struct Pack {
@@ -162,6 +163,6 @@ pub fn get_pack_age(pack_id: i64) -> i64 {
 #[inline]
 pub fn get_pack_bot_count(pack_id: i64) -> u64 {
     get_pack_data(pack_id)
-        .map(|p| p.bots.len() as u64)
+        .map(|p| p.bots.iter().filter(|id| is_hidden(***id)).count() as u64)
         .unwrap_or_default()
 }
