@@ -11,6 +11,7 @@ use parking_lot::RwLock;
 use scylla::FromRow;
 use tantivy::schema::Schema;
 
+use crate::models::bots::is_hidden;
 use crate::models::connection::session;
 use crate::models::utils::{process_rows, VoteStats};
 use crate::search::index_impls::packs::{
@@ -21,7 +22,6 @@ use crate::search::index_impls::packs::{
     TAG_FIELD,
 };
 use crate::{derive_fetch_by_id, derive_fetch_iter};
-use crate::models::bots::{get_bot_data, is_hidden};
 
 #[derive(FromRow, FieldNamesAsArray, Debug, Clone)]
 pub struct Pack {

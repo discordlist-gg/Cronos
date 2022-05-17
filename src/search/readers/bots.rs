@@ -185,10 +185,13 @@ where
     let query = if let Some(premium) = filter.premium {
         Box::new(BooleanQuery::new(vec![
             (Occur::Must, query),
-            (Occur::Must, Box::new(TermQuery::new(
-                Term::from_field_u64(ctx.premium_field, premium as u64),
-                IndexRecordOption::Basic,
-            )))
+            (
+                Occur::Must,
+                Box::new(TermQuery::new(
+                    Term::from_field_u64(ctx.premium_field, premium as u64),
+                    IndexRecordOption::Basic,
+                )),
+            ),
         ]))
     } else {
         query
