@@ -8,7 +8,6 @@ use backend_common::FieldNamesAsArray;
 use futures::StreamExt;
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
-use poem_openapi::Object;
 use scylla::FromRow;
 use tantivy::schema::Schema;
 
@@ -23,8 +22,7 @@ use crate::search::index_impls::packs::{
 };
 use crate::{derive_fetch_by_id, derive_fetch_iter};
 
-#[derive(Object, FromRow, FieldNamesAsArray, Debug, Clone)]
-#[oai(rename_all = "camelCase")]
+#[derive(FromRow, FieldNamesAsArray, Debug, Clone)]
 pub struct Pack {
     /// The ID of the pack.
     pub id: JsSafeBigInt,
