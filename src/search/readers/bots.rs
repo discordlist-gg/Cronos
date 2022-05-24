@@ -63,7 +63,7 @@ impl Default for BotsSortBy {
 #[derive(Default, Debug, Object)]
 pub struct BotFilter {
     /// A set of tags to filter results by.
-    #[oai(validator(max_items = 10, unique_items), default)]
+    #[oai(validator(max_items = 50, unique_items), default)]
     tags: Vec<String>,
 
     /// The set of features to filter by.
