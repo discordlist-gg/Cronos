@@ -60,7 +60,21 @@ impl Default for BotsSortBy {
     }
 }
 
+#[derive(Debug, Enum)]
+#[oai(rename_all = "lowercase")]
+pub enum FilterMode {
+    Union,
+    Intersection,
+}
+
+impl Default for FilterMode {
+    fn default() -> Self {
+        Self::Union
+    }
+}
+
 #[derive(Default, Debug, Object)]
+#[oai(rename_all = "camelCase")]
 pub struct BotFilter {
     /// A set of tags to filter results by.
     #[oai(validator(max_items = 50, unique_items), default)]
@@ -71,6 +85,9 @@ pub struct BotFilter {
 
     /// If the bot should be premium or not.
     premium: Option<bool>,
+
+    #[oai(default)]
+    filter_mode: FilterMode,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -182,7 +199,10 @@ where
 
     let query =
         crate::search::queries::distribution_query(query.as_deref(), search_fields);
-    let query = if let Some(premium) = filter.premium {
+
+    let query = if matches!(filter.filter_mode, FilterMode::Intersection) {
+        apply_filter(ctx, &filter, query)
+    } else  if let Some(premium) = filter.premium {
         Box::new(BooleanQuery::new(vec![
             (Occur::Must, query),
             (
@@ -287,12 +307,17 @@ fn apply_filter(
     filter: &BotFilter,
     existing_query: Box<dyn Query>,
 ) -> Box<dyn Query> {
+    let occur = match filter.filter_mode {
+        FilterMode::Union => Occur::Should,
+        FilterMode::Intersection => Occur::Must,
+    };
+
     let mut parts = filter
         .tags
         .iter()
         .map(|v| {
             (
-                Occur::Should,
+                occur,
                 Box::new(TermQuery::new(
                     Term::from_field_text(ctx.tags_agg_field, v),
                     IndexRecordOption::Basic,
