@@ -202,7 +202,7 @@ where
 
     let query = if matches!(filter.filter_mode, FilterMode::Intersection) {
         apply_filter(ctx, &filter, query)
-    } else  if let Some(premium) = filter.premium {
+    } else if let Some(premium) = filter.premium {
         Box::new(BooleanQuery::new(vec![
             (Occur::Must, query),
             (
