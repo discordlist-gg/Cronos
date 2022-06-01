@@ -35,7 +35,6 @@ CREATE TABLE IF NOT EXISTS packs (
     is_hidden boolean,
     is_forced_into_hiding boolean,
     owner_id bigint,
-    co_owner_ids set<bigint>,
     PRIMARY KEY ( id )
 );
 CREATE TABLE IF NOT EXISTS pack_likes (

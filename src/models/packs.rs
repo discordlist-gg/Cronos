@@ -55,9 +55,6 @@ pub struct Pack {
 
     /// The primary owner of this pack.
     pub owner_id: JsSafeBigInt,
-
-    /// The set of co-owners of this pack.
-    pub co_owner_ids: Set<JsSafeBigInt>,
 }
 derive_fetch_by_id!(Pack, table = "packs");
 derive_fetch_iter!(Pack, table = "packs");

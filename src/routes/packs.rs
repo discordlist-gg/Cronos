@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use backend_common::types::{JsSafeBigInt, Set, Timestamp};
+use backend_common::types::{JsSafeBigInt, Timestamp};
 use poem::Result;
 use poem_openapi::param::Path;
 use poem_openapi::payload::Json;
@@ -41,9 +41,6 @@ pub struct PackHit {
     /// The primary owner of this pack.
     pub owner_id: JsSafeBigInt,
 
-    /// The set of co-owners of this pack.
-    pub co_owner_ids: Set<JsSafeBigInt>,
-
     /// The number of likes the pack has.
     pub likes: JsSafeBigInt,
 }
@@ -66,7 +63,6 @@ impl FromTantivyDoc for PackHit {
             name: pack.name,
             created_on: pack.created_on,
             owner_id: pack.owner_id,
-            co_owner_ids: pack.co_owner_ids,
             description: pack.description,
             tag: pack.tag,
             bots,
