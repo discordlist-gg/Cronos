@@ -24,11 +24,28 @@ async fn check_votes_loop() {
 }
 
 pub fn start_live_data_tasks(a7s_uri: String, a7s_auth: String) {
-    tokio::spawn(refresh_live_data_loop(a7s_uri, a7s_auth));
+    tokio::spawn(refresh_trending_scores(a7s_uri, a7s_auth));
+    tokio::spawn(refresh_live_data_loop());
 }
 
-async fn refresh_live_data_loop(a7s_uri: String, a7s_auth: String) {
+async fn refresh_live_data_loop() {
     let mut interval = interval(Duration::from_secs(1200));
+
+    loop {
+        interval.tick().await;
+
+        if let Err(e) = crate::models::bots::refresh_latest_data().await {
+            error!("Failed to update bot data due to error: {}", e);
+        }
+
+        if let Err(e) = crate::models::packs::refresh_latest_data().await {
+            error!("Failed to update pack data due to error: {}", e);
+        }
+    }
+}
+
+async fn refresh_trending_scores(a7s_uri: String, a7s_auth: String) {
+    let mut interval = interval(Duration::from_secs(300));
 
     loop {
         interval.tick().await;
@@ -41,16 +58,9 @@ async fn refresh_live_data_loop(a7s_uri: String, a7s_auth: String) {
             error!("Failed to update bot trending data due to error: {}", e);
         }
 
-        if let Err(e) = crate::models::bots::refresh_latest_data().await {
-            error!("Failed to update bot data due to error: {}", e);
-        }
-
-        if let Err(e) = crate::models::packs::refresh_latest_data().await {
-            error!("Failed to update pack data due to error: {}", e);
-        }
+        info!("Refreshed trending scores for entities!");
     }
 }
-
 
 async fn fetch_bot_trending(a7s_uri: &str, a7s_auth: &str) -> anyhow::Result<()> {
     let client = reqwest::Client::new();
