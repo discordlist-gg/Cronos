@@ -136,6 +136,13 @@ pub async fn refresh_latest_votes() -> Result<()> {
 }
 
 static LIVE_DATA: Lazy<RwLock<HashMap<i64, Bot>>> = Lazy::new(Default::default);
+static TRENDING_DATA: Lazy<ArcSwap<HashMap<i64, f64>>> =
+    Lazy::new(|| ArcSwap::from_pointee(HashMap::new()));
+
+#[inline]
+pub fn set_bot_trending_data(data: HashMap<i64, f64>) {
+    TRENDING_DATA.store(Arc::new(data));
+}
 
 #[inline]
 pub fn get_bot_data(id: i64) -> Option<Bot> {
@@ -199,8 +206,9 @@ pub fn get_bot_premium(bot_id: i64) -> bool {
 }
 
 #[inline]
-pub fn get_bot_trending_score(_bot_id: i64) -> f64 {
-    1.0
+pub fn get_bot_trending_score(bot_id: i64) -> f64 {
+    let txn = TRENDING_DATA.load();
+    txn.get(&bot_id).copied().unwrap_or_default()
 }
 
 #[inline]

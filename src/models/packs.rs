@@ -81,6 +81,13 @@ impl Pack {
 
 static VOTE_INFO: Lazy<ArcSwap<HashMap<i64, VoteStats>>> =
     Lazy::new(|| ArcSwap::from_pointee(HashMap::new()));
+static TRENDING_DATA: Lazy<ArcSwap<HashMap<i64, f64>>> =
+    Lazy::new(|| ArcSwap::from_pointee(HashMap::new()));
+
+#[inline]
+pub fn set_pack_trending_data(data: HashMap<i64, f64>) {
+    TRENDING_DATA.store(Arc::new(data));
+}
 
 #[inline]
 pub fn vote_stats(id: i64) -> VoteStats {
@@ -146,8 +153,9 @@ pub fn get_pack_likes(pack_id: i64) -> u64 {
 }
 
 #[inline]
-pub fn get_pack_trending_score(_pack_id: i64) -> f64 {
-    0.0
+pub fn get_pack_trending_score(pack_id: i64) -> f64 {
+    let txn = TRENDING_DATA.load();
+    txn.get(&pack_id).copied().unwrap_or_default()
 }
 
 #[inline]

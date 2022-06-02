@@ -66,6 +66,14 @@ pub struct Config {
     #[clap(short, long, env, default_value = "http://127.0.0.1:7700/v0")]
     /// The exposed address of the server.
     exposed_address: String,
+
+    #[clap(long, env, default_value = "http://127.0.0.1:6969/v0")]
+    /// The address of the a7s server.
+    a7s_uri: String,
+
+    #[clap(long, env, default_value = "sdgadfgadfgadsfgadfgadfg")]
+    /// The auth key of the a7s server.
+    a7s_auth: String,
 }
 
 #[tokio::main]
@@ -87,7 +95,7 @@ async fn main() -> Result<()> {
     }
 
     tasks::start_vote_update_tasks();
-    tasks::start_live_data_tasks();
+    tasks::start_live_data_tasks(args.a7s_uri, args.a7s_auth);
 
     {
         let limiter = Arc::new(Semaphore::new(args.max_concurrency));

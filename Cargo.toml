@@ -33,3 +33,4 @@ poem = { version = "1.3.22", features = ["anyhow"] }
 poem-openapi = { version = "1.3.22", features = ["redoc", "uuid"] }
 clap = { version = "3", features = ["derive", "env"] }
 backend-common = { git = "https://github.com/discordlist-gg/backend-common.git" }
+reqwest = { version = "0.11.10", features = ["json"] }
