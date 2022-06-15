@@ -71,7 +71,7 @@ pub struct Config {
     /// The address of the a7s server.
     a7s_uri: String,
 
-    #[clap(long, env, default_value = "sdgadfgadfgadsfgadfgadfg")]
+    #[clap(long, env, default_value = "erghsudhfgadfpiughade")]
     /// The auth key of the a7s server.
     a7s_auth: String,
 }
