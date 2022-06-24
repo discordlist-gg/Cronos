@@ -71,6 +71,8 @@ async fn fetch_bot_trending(a7s_uri: &str, a7s_auth: &str) -> anyhow::Result<()>
         .json::<HashMap<i64, String>>()
         .await?;
 
+    dbg!(&data);
+
     let data = data.into_iter()
         .filter_map(|(k, v)| Some((k, v.parse::<f64>().ok()?)))
         .collect();
