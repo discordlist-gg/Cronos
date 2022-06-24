@@ -100,11 +100,15 @@ impl PackIndex {
             .await?
             .ok_or_else(|| anyhow!("Bot does not exist!"))?;
 
-        let term = Term::from_field_i64(self.id_field, pack_id);
-        let doc = pack.as_tantivy_doc(&self.schema);
-        self.writer.add_and_replace_document(term, doc).await?;
+        if pack.bots.len() > 1 {
+            let term = Term::from_field_i64(self.id_field, pack_id);
+            let doc = pack.as_tantivy_doc(&self.schema);
+            self.writer.add_and_replace_document(term, doc).await?;
 
-        update_live_data(pack);
+            update_live_data(pack);
+        } else {
+            remove_pack_from_live(pack_id);
+        }
 
         Ok(())
     }
@@ -114,9 +118,11 @@ impl PackIndex {
         models::packs::refresh_latest_data().await?;
 
         for pack in models::packs::all_packs() {
-            self.writer
-                .add_document(pack.as_tantivy_doc(&self.schema))
-                .await?;
+            if pack.bots.len() > 1 {
+                self.writer
+                    .add_document(pack.as_tantivy_doc(&self.schema))
+                    .await?;
+            }
         }
 
         Ok(())
