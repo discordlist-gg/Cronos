@@ -131,6 +131,17 @@ pub struct PackApi;
 
 #[OpenApi]
 impl PackApi {
+    /// List all pack ids.
+    #[oai(path = "/packs/ids", method = "get", tag = "crate::ApiTags::Packs")]
+    pub async fn get_pack_ids(&self) -> Json<Vec<JsSafeBigInt>> {
+        let ids = crate::models::packs::all_packs()
+            .into_iter()
+            .map(|b| b.id)
+            .collect::<Vec<_>>();
+
+        Json(ids)
+    }
+
     /// Update Pack Data
     ///
     /// This internally pulls data from the database.
