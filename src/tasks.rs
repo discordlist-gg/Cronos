@@ -64,14 +64,16 @@ async fn refresh_trending_scores(a7s_uri: String, a7s_auth: String) {
 
 async fn fetch_bot_trending(a7s_uri: &str, a7s_auth: &str) -> anyhow::Result<()> {
     let client = reqwest::Client::new();
-    let data = client.get(format!("{}/bots/trending-scores", a7s_uri))
+    let data = client
+        .get(format!("{}/bots/trending-scores", a7s_uri))
         .bearer_auth(a7s_auth)
         .send()
         .await?
         .json::<HashMap<i64, String>>()
         .await?;
 
-    let data = data.into_iter()
+    let data = data
+        .into_iter()
         .filter_map(|(k, v)| Some((k, v.parse::<f64>().ok()?)))
         .collect();
 
@@ -82,14 +84,16 @@ async fn fetch_bot_trending(a7s_uri: &str, a7s_auth: &str) -> anyhow::Result<()>
 
 async fn fetch_pack_trending(a7s_uri: &str, a7s_auth: &str) -> anyhow::Result<()> {
     let client = reqwest::Client::new();
-    let data = client.get(format!("{}/packs/trending-scores", a7s_uri))
+    let data = client
+        .get(format!("{}/packs/trending-scores", a7s_uri))
         .bearer_auth(a7s_auth)
         .send()
         .await?
         .json::<HashMap<i64, String>>()
         .await?;
 
-    let data = data.into_iter()
+    let data = data
+        .into_iter()
         .filter_map(|(k, v)| Some((k, v.parse::<f64>().ok()?)))
         .collect();
 
