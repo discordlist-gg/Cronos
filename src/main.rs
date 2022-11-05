@@ -141,6 +141,7 @@ async fn main() -> Result<()> {
                     "http://localhost:3000",
                     "https://discordlist.gg",
                     "https://beta.discordlist.gg",
+                    "http://audun.local:3000",
                 ])
                 .allow_methods([
                     Method::GET,
