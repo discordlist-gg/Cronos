@@ -156,6 +156,17 @@ pub struct BotApi;
 
 #[OpenApi]
 impl BotApi {
+    /// List all bot ids.
+    #[oai(path = "/bots/ids", method = "get", tag = "crate::ApiTags::Bots")]
+    pub async fn get_bot_ids(&self) -> Json<Vec<JsSafeBigInt>> {
+        let ids = crate::models::bots::all_bots()
+            .into_iter()
+            .map(|b| b.id)
+            .collect::<Vec<_>>();
+
+        Json(ids)
+    }
+
     /// Update Bot Data
     ///
     /// This internally pulls data from the database.
